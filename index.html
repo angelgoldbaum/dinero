@@ -439,16 +439,17 @@ body {
 .form-input:focus { border-color: var(--accent); }
 .form-input.big { font-size: 28px; font-weight: 600; text-align: center; font-family: var(--serif); }
 select.form-input { cursor: pointer; }
-.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.type-toggle { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
 .type-btn {
-  padding: 10px; border-radius: var(--radius-sm);
+  padding: 10px 6px; border-radius: var(--radius-sm);
   border: 1.5px solid var(--border2);
   background: transparent; color: var(--muted);
-  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.15s;
 }
 .type-btn.active.expense { background: rgba(255,92,92,0.15); border-color: var(--red); color: var(--red); }
 .type-btn.active.income { background: rgba(200,242,97,0.15); border-color: var(--accent); color: var(--accent); }
+.type-btn.active.transfer { background: rgba(77,216,192,0.15); border-color: var(--teal); color: var(--teal); }
 
 .categories-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
 .cat-btn {
@@ -706,6 +707,7 @@ select.form-input { cursor: pointer; }
     <button class="filter-chip active" onclick="setTypeFilter('all',this)">Todo</button>
     <button class="filter-chip" onclick="setTypeFilter('expense',this)">Gastos</button>
     <button class="filter-chip" onclick="setTypeFilter('income',this)">Ingresos</button>
+    <button class="filter-chip" onclick="setTypeFilter('transfer',this)">⇄ Transferencias</button>
   </div>
 
   <!-- Donut chart -->
@@ -931,6 +933,7 @@ select.form-input { cursor: pointer; }
       <div class="type-toggle">
         <button class="type-btn active expense" id="btn-expense" onclick="setTxType('expense')">↓ Gasto</button>
         <button class="type-btn income" id="btn-income" onclick="setTxType('income')">↑ Ingreso</button>
+        <button class="type-btn transfer" id="btn-transfer" onclick="setTxType('transfer')">⇄ Transfer</button>
       </div>
     </div>
 
@@ -941,18 +944,41 @@ select.form-input { cursor: pointer; }
       </div>
 
       <div class="form-group">
-        <label class="form-label">Descripción</label>
+        <label class="form-label" id="tx-desc-label">Descripción</label>
         <input type="text" class="form-input" id="tx-desc" placeholder="¿En qué gastaste?">
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Categoría</label>
-        <div class="categories-grid" id="tx-categories"></div>
+      <!-- Campos solo para gasto/ingreso -->
+      <div id="tx-normal-fields">
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <div class="categories-grid" id="tx-categories"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Método de pago</label>
+          <div class="method-grid" id="tx-methods"></div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Método de pago</label>
-        <div class="method-grid" id="tx-methods"></div>
+      <!-- Campos solo para transferencia -->
+      <div id="tx-transfer-fields" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Cuenta origen</label>
+          <select class="form-input" id="tx-from-card">
+            <option value="">— Selecciona tarjeta —</option>
+          </select>
+        </div>
+        <div style="text-align:center;font-size:20px;color:var(--teal);margin:-4px 0 10px">↓</div>
+        <div class="form-group">
+          <label class="form-label">Cuenta destino</label>
+          <select class="form-input" id="tx-to-card">
+            <option value="">— Selecciona tarjeta —</option>
+          </select>
+        </div>
+        <div style="background:rgba(77,216,192,0.08);border:1px solid rgba(77,216,192,0.2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--teal)">
+          ⓘ Las transferencias no afectan tu balance total. Solo aplican entre cuentas de débito o de débito a efectivo.
+        </div>
       </div>
 
       <div class="form-group">
@@ -960,7 +986,7 @@ select.form-input { cursor: pointer; }
         <input type="date" class="form-input" id="tx-date">
       </div>
 
-      <div class="form-group">
+      <div id="tx-who-field" class="form-group">
         <label class="form-label">Quién pagó</label>
         <select class="form-input" id="tx-who">
           <option value="angel">Angel</option>
@@ -977,11 +1003,13 @@ select.form-input { cursor: pointer; }
         </select>
       </div>
 
-      <div class="facturable-row" id="facturable-row" onclick="toggleFacturable()">
-        <div class="facturable-box" id="facturable-box"></div>
-        <div>
-          <div class="facturable-label">🧾 Gasto facturable</div>
-          <div class="facturable-sub">Aplica para deducción fiscal</div>
+      <div id="tx-facturable-field">
+        <div class="facturable-row" id="facturable-row" onclick="toggleFacturable()">
+          <div class="facturable-box" id="facturable-box"></div>
+          <div>
+            <div class="facturable-label">🧾 Gasto facturable</div>
+            <div class="facturable-sub">Aplica para deducción fiscal</div>
+          </div>
         </div>
       </div>
 
@@ -1344,8 +1372,20 @@ window.setAccount = function(acc) {
 let currentTxType = 'expense';
 window.setTxType = function(t) {
   currentTxType = t;
-  document.getElementById('btn-expense').className = 'type-btn' + (t==='expense'?' active expense':'');
-  document.getElementById('btn-income').className = 'type-btn' + (t==='income'?' active income':'');
+  document.getElementById('btn-expense').className = 'type-btn' + (t==='expense' ? ' active expense' : '');
+  document.getElementById('btn-income').className  = 'type-btn' + (t==='income'  ? ' active income'  : '');
+  document.getElementById('btn-transfer').className = 'type-btn' + (t==='transfer' ? ' active transfer' : '');
+
+  const isTransfer = t === 'transfer';
+  document.getElementById('tx-normal-fields').style.display    = isTransfer ? 'none' : 'block';
+  document.getElementById('tx-transfer-fields').style.display  = isTransfer ? 'block' : 'none';
+  document.getElementById('tx-facturable-field').style.display = isTransfer ? 'none' : 'block';
+  document.getElementById('tx-who-field').style.display        = isTransfer ? 'none' : 'block';
+  document.getElementById('tx-desc-label').textContent         = isTransfer ? 'Nota / descripción' : 'Descripción';
+  document.getElementById('tx-desc').placeholder               = isTransfer ? 'Ej: Pago de quincena...' : '¿En qué gastaste?';
+  document.querySelector('.submit-btn').textContent             = isTransfer ? 'Registrar transferencia' : 'Guardar';
+
+  if (isTransfer) buildTransferSelects();
 }
 
 // ── CATEGORIES GRID ──
@@ -1364,7 +1404,23 @@ window.selectCat = function(id) {
   buildCatGrid();
 }
 
-function buildMethodGrid() {
+function buildTransferSelects() {
+  // Only débito and efectivo cards are valid
+  const validTypes = ['débito', 'efectivo'];
+  const validCards = getMethods().filter(c => validTypes.includes(c.type));
+
+  const fromSel = document.getElementById('tx-from-card');
+  const toSel   = document.getElementById('tx-to-card');
+
+  const opts = validCards.map(c =>
+    `<option value="${c.id}">${c.emoji} ${c.name || c.label}</option>`
+  ).join('');
+
+  fromSel.innerHTML = '<option value="">— Origen —</option>' + opts;
+  toSel.innerHTML   = '<option value="">— Destino —</option>' + opts;
+}
+
+
   const methods = getMethods();
   const g = document.getElementById('tx-methods');
   g.innerHTML = methods.map(m=>`
@@ -1398,6 +1454,18 @@ window.openTxModal = function() {
   isFacturable = false;
   document.getElementById('facturable-row').classList.remove('checked');
   document.getElementById('facturable-box').textContent = '';
+  // reset to expense mode
+  currentTxType = 'expense';
+  document.getElementById('btn-expense').className = 'type-btn active expense';
+  document.getElementById('btn-income').className  = 'type-btn income';
+  document.getElementById('btn-transfer').className = 'type-btn transfer';
+  document.getElementById('tx-normal-fields').style.display    = 'block';
+  document.getElementById('tx-transfer-fields').style.display  = 'none';
+  document.getElementById('tx-facturable-field').style.display = 'block';
+  document.getElementById('tx-who-field').style.display        = 'block';
+  document.getElementById('tx-desc-label').textContent         = 'Descripción';
+  document.getElementById('tx-desc').placeholder               = '¿En qué gastaste?';
+  document.querySelector('#modal-tx .submit-btn').textContent   = 'Guardar';
   document.getElementById('tx-date').value = localDate();
   document.getElementById('tx-account').value = S.account;
   // default to first available method
@@ -1431,11 +1499,58 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 
 // ── SAVE TX ──
 window.saveTx = function() {
-  const amt = parseFloat(document.getElementById('tx-amount').value);
+  const amt  = parseFloat(document.getElementById('tx-amount').value);
   const desc = document.getElementById('tx-desc').value.trim();
-  if (!amt || amt<=0) { showToast('⚠️ Ingresa un monto válido'); return; }
-  if (!desc) { showToast('⚠️ Escribe una descripción'); return; }
+  if (!amt || amt <= 0) { showToast('⚠️ Ingresa un monto válido'); return; }
 
+  // ── TRANSFERENCIA ──
+  if (currentTxType === 'transfer') {
+    const fromId = document.getElementById('tx-from-card').value;
+    const toId   = document.getElementById('tx-to-card').value;
+    if (!fromId || !toId)         { showToast('⚠️ Selecciona origen y destino'); return; }
+    if (fromId === toId)          { showToast('⚠️ Origen y destino deben ser distintos'); return; }
+
+    const validTypes = ['débito', 'efectivo'];
+    const cards = getMethods();
+    const fromCard = cards.find(c => String(c.id) === String(fromId));
+    const toCard   = cards.find(c => String(c.id) === String(toId));
+
+    if (!fromCard || !validTypes.includes(fromCard.type)) {
+      showToast('⚠️ La cuenta origen debe ser débito o efectivo'); return;
+    }
+    if (!toCard || !validTypes.includes(toCard.type)) {
+      showToast('⚠️ La cuenta destino debe ser débito o efectivo'); return;
+    }
+    // No permite efectivo → débito (solo débito→débito o débito→efectivo)
+    if (fromCard.type === 'efectivo' && toCard.type === 'débito') {
+      showToast('⚠️ No puedes transferir de efectivo a débito'); return;
+    }
+
+    const tx = {
+      id: Date.now(),
+      type: 'transfer',
+      amount: amt,
+      desc: desc || `${fromCard.emoji} ${fromCard.name} → ${toCard.emoji} ${toCard.name}`,
+      fromCard: fromId,
+      toCard: toId,
+      fromCardName: fromCard.name || fromCard.label,
+      toCardName: toCard.name || toCard.label,
+      date: document.getElementById('tx-date').value,
+      account: document.getElementById('tx-account').value,
+      note: document.getElementById('tx-note').value.trim(),
+      facturable: false,
+      who: 'angel',
+    };
+    S.transactions.unshift(tx);
+    saveData('transactions');
+    closeModal('modal-tx');
+    showToast('✓ Transferencia registrada');
+    renderAll();
+    return;
+  }
+
+  // ── GASTO / INGRESO ──
+  if (!desc) { showToast('⚠️ Escribe una descripción'); return; }
   const tx = {
     id: Date.now(),
     type: currentTxType,
@@ -1643,15 +1758,27 @@ function renderHome() {
 }
 
 function txItemHtml(t) {
-  const cat = getCat(t.category);
-  const sign = t.type==='expense'?'-':'+';
-  const cls = t.type==='expense'?'neg':'pos';
-  const who = t.who==='angel'?'<span class="user-badge angel">A</span>':t.who==='novia'?'<span class="user-badge novia">N</span>':'<span class="user-badge angel">A</span><span class="user-badge novia">N</span>';
+  if (t.type === 'transfer') {
+    return `<div class="tx-item">
+      <div class="tx-icon" style="background:rgba(77,216,192,0.15)">⇄</div>
+      <div class="tx-info">
+        <div class="tx-name">${t.desc}</div>
+        <div class="tx-meta">${t.date} · <span style="color:var(--teal);font-size:10px;font-weight:600">TRANSFERENCIA</span>${t.note ? ' · '+t.note : ''}</div>
+      </div>
+      <div class="tx-amount" style="color:var(--teal)">$${fmt(t.amount)}</div>
+    </div>`;
+  }
+  const cat  = getCat(t.category);
+  const sign = t.type === 'expense' ? '-' : '+';
+  const cls  = t.type === 'expense' ? 'neg' : 'pos';
+  const who  = t.who === 'angel' ? '<span class="user-badge angel">A</span>'
+             : t.who === 'novia' ? '<span class="user-badge novia">N</span>'
+             : '<span class="user-badge angel">A</span><span class="user-badge novia">N</span>';
   return `<div class="tx-item">
     <div class="tx-icon" style="background:${cat.color}22">${cat.emoji}</div>
     <div class="tx-info">
       <div class="tx-name">${t.desc}</div>
-      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable?' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾 Facturable</span>':''}</div>
+      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable ? ' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾 Facturable</span>' : ''}</div>
     </div>
     <div class="tx-amount ${cls}">${sign}$${fmt(t.amount)}</div>
   </div>`;
@@ -1669,7 +1796,8 @@ function renderGastosScreen() {
     return d.getMonth()===month && d.getFullYear()===year;
   });
 
-  if(S.typeFilter!=='all') txs = txs.filter(t=>t.type===S.typeFilter);
+  if(S.typeFilter === 'all') txs = txs.filter(t => t.type !== 'transfer');
+  else if(S.typeFilter !== 'all') txs = txs.filter(t=>t.type===S.typeFilter);
   if(S.catFilter!=='all') txs = txs.filter(t=>t.category===S.catFilter);
 
   // Donut
