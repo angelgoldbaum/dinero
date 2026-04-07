@@ -518,6 +518,48 @@ select.form-input { cursor: pointer; }
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+/* ─── AJUSTES / TARJETAS ─── */
+.settings-section { margin-bottom: 24px; }
+.settings-section-title {
+  font-size: 11px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 1px; font-weight: 600; margin-bottom: 10px;
+}
+.card-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 6px;
+}
+.card-color-dot {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.card-info { flex: 1; min-width: 0; }
+.card-name { font-size: 14px; font-weight: 500; }
+.card-type { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.card-actions { display: flex; gap: 8px; }
+.card-action-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--muted); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.card-action-btn:active { background: var(--bg3); }
+.card-action-btn.delete:active { border-color: var(--red); color: var(--red); }
+
+/* Color picker */
+.color-picker-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.color-swatch {
+  width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.color-swatch.selected { border-color: white; transform: scale(1.1); }
+
 /* Misc */
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 .tag {
@@ -740,6 +782,51 @@ select.form-input { cursor: pointer; }
   </div>
 </div>
 
+<!-- AJUSTES -->
+<div class="screen" id="s-ajustes">
+  <div style="margin-top:14px"></div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">Tarjetas y métodos de pago</div>
+    <div id="cards-list"></div>
+    <button onclick="openCardModal()" style="width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">
+      + Agregar tarjeta o método
+    </button>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">Usuarios</div>
+    <div class="card-item">
+      <div class="card-color-dot" style="background:rgba(200,242,97,0.15)">👤</div>
+      <div class="card-info">
+        <div class="card-name" id="settings-name-angel">Angel</div>
+        <div class="card-type">Tú · Admin</div>
+      </div>
+      <button onclick="editUserName('angel')" class="card-action-btn">✏️</button>
+    </div>
+    <div class="card-item">
+      <div class="card-color-dot" style="background:rgba(182,143,255,0.15)">👤</div>
+      <div class="card-info">
+        <div class="card-name" id="settings-name-novia">Novia</div>
+        <div class="card-type">Pareja · Admin</div>
+      </div>
+      <button onclick="editUserName('novia')" class="card-action-btn">✏️</button>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">Cuentas</div>
+    <div class="card-item">
+      <div class="card-color-dot" style="background:rgba(200,242,97,0.12)">🏠</div>
+      <div class="card-info"><div class="card-name">Personal</div><div class="card-type">Finanzas del hogar</div></div>
+    </div>
+    <div class="card-item">
+      <div class="card-color-dot" style="background:rgba(255,152,64,0.12)">✂️</div>
+      <div class="card-info"><div class="card-name">Barbería</div><div class="card-type">Noble &amp; Fine</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ESCANEO -->
 <div class="screen" id="s-escaneo">
   <div style="margin-top:14px"></div>
@@ -791,9 +878,9 @@ select.form-input { cursor: pointer; }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
     <span>Recurrente</span>
   </button>
-  <button class="nav-btn" onclick="showScreen('s-escaneo')" id="nav-escaneo">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
-    <span>Escanear</span>
+  <button class="nav-btn" onclick="showScreen('s-ajustes')" id="nav-ajustes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span>Ajustes</span>
   </button>
 </nav>
 
@@ -1037,6 +1124,69 @@ select.form-input { cursor: pointer; }
   </div>
 </div>
 
+<!-- MODAL: Tarjeta / Método -->
+<div class="modal-overlay" id="modal-card">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="card-modal-title">Nueva tarjeta</div>
+
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-input" id="card-name" placeholder="BBVA Débito, Nu, Efectivo...">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-input" id="card-type">
+        <option value="débito">Débito</option>
+        <option value="crédito">Crédito</option>
+        <option value="efectivo">Efectivo</option>
+        <option value="transferencia">Transferencia</option>
+        <option value="digital">Billetera digital</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Emoji / Icono</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="card-emoji-suggestions">
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💳</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🟠</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🟣</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💵</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">📲</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🔵</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🏦</span>
+        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💰</span>
+      </div>
+      <input type="text" class="form-input" id="card-emoji" placeholder="💳" maxlength="4">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Color de fondo</label>
+      <div class="color-picker-row" id="card-color-picker">
+        <div class="color-swatch selected" data-color="#1e3a5f" style="background:#1e3a5f" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#3a1e5f" style="background:#3a1e5f" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#1e5f3a" style="background:#1e5f3a" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#5f3a1e" style="background:#5f3a1e" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#5f1e1e" style="background:#5f1e1e" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#1e4a5f" style="background:#1e4a5f" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#2a2a2a" style="background:#2a2a2a" onclick="selectCardColor(this)"></div>
+        <div class="color-swatch" data-color="#1e5f5f" style="background:#1e5f5f" onclick="selectCardColor(this)"></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Saldo actual (opcional)</label>
+      <input type="number" class="form-input" id="card-balance" placeholder="0.00" inputmode="decimal">
+    </div>
+
+    <input type="hidden" id="card-editing-id">
+    <button class="submit-btn" onclick="saveCard()">Guardar</button>
+    <button onclick="closeModal('modal-card')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
+  </div>
+</div>
+
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1045,13 +1195,12 @@ import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, query, orde
 
 // ── FIREBASE CONFIG ─── (replace with your project)
 const firebaseConfig = {
-  apiKey: "AIzaSyCZJs_MlbqFz2PQr0IImnHmPzrh9JnXh54",
-  authDomain: "el-dinero-es-dinero.firebaseapp.com",
-  projectId: "el-dinero-es-dinero",
-  storageBucket: "el-dinero-es-dinero.firebasestorage.app",
-  messagingSenderId: "80947656723",
-  appId: "1:80947656723:web:f012fecca1ceae13aaa7e6"
-
+  apiKey: "REPLACE_WITH_YOUR_API_KEY",
+  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
+  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
+  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
+  appId: "REPLACE_WITH_YOUR_APP_ID"
 };
 
 let db = null;
@@ -1076,6 +1225,8 @@ window._state = {
   goals: [],
   wishlist: [],
   scanHistory: [],
+  cards: [],
+  users: { angel: 'Angel', novia: 'Novia' },
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
   typeFilter: 'all',
@@ -1109,6 +1260,18 @@ window.METHODS = [
   { id:'paypal', label:'PayPal', emoji:'🔵' },
 ];
 
+function getMethodDisplay(methodId) {
+  const methods = getMethods();
+  const m = methods.find(m => String(m.id) === String(methodId));
+  if (m) return { emoji: m.emoji, name: m.label || m.name };
+  return { emoji: '💳', name: methodId };
+}
+
+function getMethods() {
+  if (S.cards && S.cards.length > 0) return S.cards;
+  return METHODS;
+}
+
 // ── STORAGE ──
 function lsGet(k) { try { return JSON.parse(localStorage.getItem('dinero_'+k)||'null'); } catch { return null; } }
 function lsSet(k,v) { try { localStorage.setItem('dinero_'+k, JSON.stringify(v)); } catch {} }
@@ -1128,18 +1291,17 @@ async function cloudLoad(col) {
 
 // ── LOAD DATA ──
 async function loadAll() {
-  const keys = ['transactions','subscriptions','bills','budgets','goals','wishlist','scanHistory'];
+  const keys = ['transactions','subscriptions','bills','budgets','goals','wishlist','scanHistory','cards'];
   for (const k of keys) {
     const local = lsGet(k);
     if (local) S[k] = local;
   }
+  const users = lsGet('users');
+  if (users) S.users = users;
   if (useCloud) {
     for (const k of keys) {
       const cloud = await cloudLoad(k);
-      if (cloud && cloud.length > 0) {
-        S[k] = cloud;
-        lsSet(k, cloud);
-      }
+      if (cloud && cloud.length > 0) { S[k] = cloud; lsSet(k, cloud); }
     }
   }
   renderAll();
@@ -1185,9 +1347,10 @@ window.showScreen = function(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const map = { 's-home':'nav-home','s-gastos':'nav-gastos','s-presupuesto':'nav-presupuesto','s-recurrentes':'nav-recurrentes','s-escaneo':'nav-escaneo' };
+  const map = { 's-home':'nav-home','s-gastos':'nav-gastos','s-presupuesto':'nav-presupuesto','s-recurrentes':'nav-recurrentes','s-ajustes':'nav-ajustes' };
   if(map[id]) document.getElementById(map[id]).classList.add('active');
   if(id==='s-gastos') renderGastosScreen();
+  if(id==='s-ajustes') renderCardsScreen();
 }
 
 // ── ACCOUNT ──
@@ -1224,10 +1387,11 @@ window.selectCat = function(id) {
 }
 
 function buildMethodGrid() {
+  const methods = getMethods();
   const g = document.getElementById('tx-methods');
-  g.innerHTML = METHODS.map(m=>`
-    <button class="method-btn${m.id===selectedMethod?' selected':''}" onclick="selectMethod('${m.id}')">
-      <span>${m.emoji}</span><span>${m.label}</span>
+  g.innerHTML = methods.map(m=>`
+    <button class="method-btn${String(m.id)===String(selectedMethod)?' selected':''}" onclick="selectMethod('${m.id}')">
+      <span>${m.emoji}</span><span>${m.label||m.name}</span>
     </button>`).join('');
 }
 window.selectMethod = function(id) {
@@ -1245,6 +1409,11 @@ function buildBudgetCatSelect() {
 window.openTxModal = function() {
   document.getElementById('tx-date').value = localDate();
   document.getElementById('tx-account').value = S.account;
+  // default to first available method
+  const methods = getMethods();
+  if (methods.length > 0 && !methods.find(m=>String(m.id)===String(selectedMethod))) {
+    selectedMethod = String(methods[0].id);
+  }
   buildCatGrid(); buildMethodGrid();
   document.getElementById('tx-amount').value = '';
   document.getElementById('tx-desc').value = '';
@@ -1490,7 +1659,7 @@ function txItemHtml(t) {
     <div class="tx-icon" style="background:${cat.color}22">${cat.emoji}</div>
     <div class="tx-info">
       <div class="tx-name">${t.desc}</div>
-      <div class="tx-meta">${t.date} · ${who} · ${METHODS.find(m=>m.id===t.method)?.emoji||''} ${t.method}</div>
+      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}</div>
     </div>
     <div class="tx-amount ${cls}">${sign}$${fmt(t.amount)}</div>
   </div>`;
@@ -1861,6 +2030,118 @@ function renderScanHistory() {
     </div>`).join('');
 }
 
+// ── CARDS MANAGEMENT ──
+let selectedCardColor = '#1e3a5f';
+
+window.openCardModal = function(editId) {
+  const modal = document.getElementById('modal-card');
+  if (editId) {
+    const card = S.cards.find(c=>c.id===editId);
+    if (!card) return;
+    document.getElementById('card-modal-title').textContent = 'Editar tarjeta';
+    document.getElementById('card-name').value = card.name || '';
+    document.getElementById('card-type').value = card.type || 'débito';
+    document.getElementById('card-emoji').value = card.emoji || '💳';
+    document.getElementById('card-balance').value = card.balance || '';
+    document.getElementById('card-editing-id').value = editId;
+    selectedCardColor = card.color || '#1e3a5f';
+  } else {
+    document.getElementById('card-modal-title').textContent = 'Nueva tarjeta';
+    document.getElementById('card-name').value = '';
+    document.getElementById('card-type').value = 'débito';
+    document.getElementById('card-emoji').value = '💳';
+    document.getElementById('card-balance').value = '';
+    document.getElementById('card-editing-id').value = '';
+    selectedCardColor = '#1e3a5f';
+  }
+  // update color swatches
+  document.querySelectorAll('#card-color-picker .color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === selectedCardColor);
+  });
+  openModal('modal-card');
+}
+
+window.selectCardColor = function(el) {
+  selectedCardColor = el.dataset.color;
+  document.querySelectorAll('#card-color-picker .color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+window.setCardEmoji = function(el) {
+  document.getElementById('card-emoji').value = el.textContent.trim();
+}
+
+window.saveCard = function() {
+  const name = document.getElementById('card-name').value.trim();
+  if (!name) { showToast('⚠️ Ingresa un nombre'); return; }
+  const editingId = document.getElementById('card-editing-id').value;
+  const card = {
+    id: editingId ? parseInt(editingId) : Date.now(),
+    name,
+    label: name,
+    type: document.getElementById('card-type').value,
+    emoji: document.getElementById('card-emoji').value || '💳',
+    color: selectedCardColor,
+    balance: parseFloat(document.getElementById('card-balance').value) || 0,
+  };
+  if (editingId) {
+    const idx = S.cards.findIndex(c=>c.id===parseInt(editingId));
+    if (idx>=0) S.cards[idx] = card;
+  } else {
+    S.cards.push(card);
+  }
+  // set selectedMethod to new card if first
+  if (S.cards.length === 1) selectedMethod = String(card.id);
+  saveData('cards');
+  closeModal('modal-card');
+  showToast(editingId ? '✓ Tarjeta actualizada' : '✓ Tarjeta agregada');
+  renderCardsScreen();
+}
+
+window.deleteCard = function(id) {
+  if (!confirm('¿Eliminar esta tarjeta?')) return;
+  S.cards = S.cards.filter(c=>c.id!==id);
+  saveData('cards');
+  showToast('✓ Tarjeta eliminada');
+  renderCardsScreen();
+}
+
+window.renderCardsScreen = function() {
+  const list = document.getElementById('cards-list');
+  if (!list) return;
+  // update user name displays
+  document.getElementById('settings-name-angel').textContent = S.users.angel || 'Angel';
+  document.getElementById('settings-name-novia').textContent = S.users.novia || 'Novia';
+
+  if (S.cards.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrega tu primera.</div></div>';
+    return;
+  }
+  list.innerHTML = S.cards.map(card => `
+    <div class="card-item">
+      <div class="card-color-dot" style="background:${card.color||'#1e3a5f'}">${card.emoji||'💳'}</div>
+      <div class="card-info">
+        <div class="card-name">${card.name}</div>
+        <div class="card-type">${card.type}${card.balance ? ' · $'+fmt(card.balance) : ''}</div>
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" onclick="openCardModal(${card.id})">✏️</button>
+        <button class="card-action-btn delete" onclick="deleteCard(${card.id})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+window.editUserName = function(who) {
+  const current = S.users[who] || (who==='angel'?'Angel':'Novia');
+  const newName = prompt(`Nombre para ${who==='angel'?'ti':'tu pareja'}:`, current);
+  if (newName && newName.trim()) {
+    S.users[who] = newName.trim();
+    lsSet('users', S.users);
+    renderCardsScreen();
+    showToast('✓ Nombre actualizado');
+  }
+}
+
 // ── RENDER ALL ──
 function renderAll() {
   renderHome();
@@ -1870,6 +2151,7 @@ function renderAll() {
   renderGoalsTab();
   renderWishlistTab();
   renderScanHistory();
+  renderCardsScreen();
 }
 window.renderAll = renderAll;
 
@@ -1912,7 +2194,15 @@ function seedDemoData() {
     { id:52, cat:'entretenimiento', limit:800, account:'personal' },
   ];
 
-  Object.entries({transactions:S.transactions,subscriptions:S.subscriptions,bills:S.bills,goals:S.goals,wishlist:S.wishlist,budgets:S.budgets}).forEach(([k,v])=>{ lsSet(k,v); });
+  S.cards = [
+    { id:100, name:'BBVA Débito', label:'BBVA Déb.', type:'débito', emoji:'💳', color:'#1e3a5f', balance:0 },
+    { id:101, name:'BBVA Crédito', label:'BBVA Créd.', type:'crédito', emoji:'🟠', color:'#3a1e5f', balance:0 },
+    { id:102, name:'Nu', label:'Nu', type:'débito', emoji:'🟣', color:'#2a1040', balance:0 },
+    { id:103, name:'Efectivo', label:'Efectivo', type:'efectivo', emoji:'💵', color:'#1e5f3a', balance:0 },
+    { id:104, name:'PayPal', label:'PayPal', type:'digital', emoji:'🔵', color:'#1e3a5f', balance:0 },
+  ];
+
+  Object.entries({transactions:S.transactions,subscriptions:S.subscriptions,bills:S.bills,goals:S.goals,wishlist:S.wishlist,budgets:S.budgets,cards:S.cards}).forEach(([k,v])=>{ lsSet(k,v); });
 }
 
 // ── INIT ──
