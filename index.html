@@ -382,8 +382,19 @@ body {
   border: 1px solid var(--border2);
   border-radius: 24px 24px 0 0;
   width: 100%; max-width: 430px;
-  padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+  max-height: 92vh;
+  display: flex; flex-direction: column;
   animation: slideUp 0.25s ease;
+}
+.modal-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px max(24px, env(safe-area-inset-bottom));
+  flex: 1;
+}
+.modal-header {
+  padding: 20px 20px 0;
+  flex-shrink: 0;
 }
 @keyframes slideUp {
   from { transform: translateY(100%); }
@@ -391,9 +402,28 @@ body {
 }
 .modal-handle {
   width: 36px; height: 4px; background: var(--border2);
-  border-radius: 2px; margin: 0 auto 20px;
+  border-radius: 2px; margin: 0 auto 16px;
 }
-.modal-title { font-family: var(--serif); font-size: 22px; margin-bottom: 20px; }
+.modal-title { font-family: var(--serif); font-size: 22px; margin-bottom: 16px; }
+
+/* Facturable checkbox */
+.facturable-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-bottom: 14px;
+  background: var(--bg3); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: border-color 0.15s;
+}
+.facturable-row.checked { border-color: var(--blue); background: rgba(92,155,255,0.06); }
+.facturable-box {
+  width: 20px; height: 20px; border-radius: 6px;
+  border: 1.5px solid var(--border2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: all 0.15s;
+}
+.facturable-row.checked .facturable-box { background: var(--blue); border-color: var(--blue); color: #fff; }
+.facturable-label { font-size: 13px; font-weight: 500; }
+.facturable-sub { font-size: 11px; color: var(--muted); }
 
 /* Form elements */
 .form-group { margin-bottom: 14px; }
@@ -895,81 +925,89 @@ select.form-input { cursor: pointer; }
 <!-- MODAL: Nueva transacción -->
 <div class="modal-overlay" id="modal-tx">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nueva transacción</div>
-
-    <div class="type-toggle">
-      <button class="type-btn active expense" id="btn-expense" onclick="setTxType('expense')">↓ Gasto</button>
-      <button class="type-btn income" id="btn-income" onclick="setTxType('income')">↑ Ingreso</button>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Monto</label>
-      <input type="number" class="form-input big" id="tx-amount" placeholder="$0.00" inputmode="decimal" min="0" step="0.01">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Descripción</label>
-      <input type="text" class="form-input" id="tx-desc" placeholder="¿En qué gastaste?">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Categoría</label>
-      <div class="categories-grid" id="tx-categories">
-        <!-- filled by JS -->
+    <div class="modal-header">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Nueva transacción</div>
+      <div class="type-toggle">
+        <button class="type-btn active expense" id="btn-expense" onclick="setTxType('expense')">↓ Gasto</button>
+        <button class="type-btn income" id="btn-income" onclick="setTxType('income')">↑ Ingreso</button>
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Método de pago</label>
-      <div class="method-grid" id="tx-methods">
-        <!-- filled by JS -->
+    <div class="modal-scroll">
+      <div class="form-group">
+        <label class="form-label">Monto</label>
+        <input type="number" class="form-input big" id="tx-amount" placeholder="$0.00" inputmode="decimal" min="0" step="0.01">
       </div>
-    </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      <div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input type="text" class="form-input" id="tx-desc" placeholder="¿En qué gastaste?">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <div class="categories-grid" id="tx-categories"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Método de pago</label>
+        <div class="method-grid" id="tx-methods"></div>
+      </div>
+
+      <div class="form-group">
         <label class="form-label">Fecha</label>
         <input type="date" class="form-input" id="tx-date">
       </div>
-      <div>
-        <label class="form-label">Quién</label>
+
+      <div class="form-group">
+        <label class="form-label">Quién pagó</label>
         <select class="form-input" id="tx-who">
           <option value="angel">Angel</option>
           <option value="novia">Novia</option>
           <option value="ambos">Ambos</option>
         </select>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="form-label">Cuenta</label>
-      <select class="form-input" id="tx-account">
-        <option value="personal">Personal</option>
-        <option value="barberia">Barbería</option>
-      </select>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Cuenta</label>
+        <select class="form-input" id="tx-account">
+          <option value="personal">Personal</option>
+          <option value="barberia">Barbería</option>
+        </select>
+      </div>
 
-    <div class="form-group">
-      <label class="form-label">Nota (opcional)</label>
-      <input type="text" class="form-input" id="tx-note" placeholder="Detalles extra...">
-    </div>
+      <div class="facturable-row" id="facturable-row" onclick="toggleFacturable()">
+        <div class="facturable-box" id="facturable-box"></div>
+        <div>
+          <div class="facturable-label">🧾 Gasto facturable</div>
+          <div class="facturable-sub">Aplica para deducción fiscal</div>
+        </div>
+      </div>
 
-    <button class="submit-btn" onclick="saveTx()">Guardar</button>
-    <button onclick="closeModal('modal-tx')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
+      <div class="form-group">
+        <label class="form-label">Nota (opcional)</label>
+        <input type="text" class="form-input" id="tx-note" placeholder="Detalles extra...">
+      </div>
+
+      <button class="submit-btn" onclick="saveTx()">Guardar</button>
+      <button onclick="closeModal('modal-tx')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
+    </div>
   </div>
 </div>
 
 <!-- MODAL: Suscripción -->
 <div class="modal-overlay" id="modal-sub">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nueva suscripción</div>
-    <div class="form-group">
-      <label class="form-label">Nombre del servicio</label>
-      <input type="text" class="form-input" id="sub-name" placeholder="Netflix, Spotify, iCloud...">
+    <div class="modal-header">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Nueva suscripción</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="modal-scroll">
+      <div class="form-group">
+        <label class="form-label">Nombre del servicio</label>
+        <input type="text" class="form-input" id="sub-name" placeholder="Netflix, Spotify, iCloud...">
+      </div>
       <div class="form-group">
         <label class="form-label">Monto</label>
         <input type="number" class="form-input" id="sub-amount" placeholder="0.00" inputmode="decimal">
@@ -982,8 +1020,6 @@ select.form-input { cursor: pointer; }
           <option value="semanal">Semanal</option>
         </select>
       </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-group">
         <label class="form-label">Día de cobro</label>
         <input type="number" class="form-input" id="sub-day" placeholder="1-31" min="1" max="31">
@@ -998,197 +1034,134 @@ select.form-input { cursor: pointer; }
           <option>Efectivo</option>
         </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Emoji / Icono</label>
+        <input type="text" class="form-input" id="sub-emoji" placeholder="🎬 📱 🎵 ☁️ ...">
+      </div>
+      <button class="submit-btn" onclick="saveSub()">Guardar</button>
+      <button onclick="closeModal('modal-sub')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Emoji / Icono</label>
-      <input type="text" class="form-input" id="sub-emoji" placeholder="🎬 📱 🎵 ☁️ ...">
-    </div>
-    <button class="submit-btn" onclick="saveSub()">Guardar</button>
-    <button onclick="closeModal('modal-sub')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
   </div>
 </div>
 
 <!-- MODAL: Recibo -->
 <div class="modal-overlay" id="modal-bill">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Recibo por pagar</div>
-    <div class="form-group">
-      <label class="form-label">Nombre del recibo</label>
-      <input type="text" class="form-input" id="bill-name" placeholder="Luz, agua, renta, internet...">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="modal-header"><div class="modal-handle"></div><div class="modal-title">Recibo por pagar</div></div>
+    <div class="modal-scroll">
+      <div class="form-group"><label class="form-label">Nombre del recibo</label><input type="text" class="form-input" id="bill-name" placeholder="Luz, agua, renta, internet..."></div>
+      <div class="form-group"><label class="form-label">Monto aprox.</label><input type="number" class="form-input" id="bill-amount" placeholder="0.00" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Fecha límite</label><input type="date" class="form-input" id="bill-due"></div>
       <div class="form-group">
-        <label class="form-label">Monto aprox.</label>
-        <input type="number" class="form-input" id="bill-amount" placeholder="0.00" inputmode="decimal">
+        <label class="form-label">Categoría</label>
+        <select class="form-input" id="bill-cat">
+          <option>🏠 Hogar</option><option>💡 Servicios</option><option>📶 Internet/Teléfono</option>
+          <option>🚗 Transporte</option><option>🏥 Salud</option><option>📦 Otro</option>
+        </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">Fecha límite</label>
-        <input type="date" class="form-input" id="bill-due">
+      <div class="toggle-row">
+        <div class="toggle-info"><div class="toggle-title">Recurrente</div><div class="toggle-sub">Se repite cada mes</div></div>
+        <div class="toggle-switch" id="bill-recurring-toggle" onclick="this.classList.toggle('on')"></div>
       </div>
+      <div style="margin-top:14px"></div>
+      <button class="submit-btn" onclick="saveBill()">Guardar</button>
+      <button onclick="closeModal('modal-bill')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Categoría</label>
-      <select class="form-input" id="bill-cat">
-        <option>🏠 Hogar</option>
-        <option>💡 Servicios</option>
-        <option>📶 Internet/Teléfono</option>
-        <option>🚗 Transporte</option>
-        <option>🏥 Salud</option>
-        <option>📦 Otro</option>
-      </select>
-    </div>
-    <div class="toggle-row">
-      <div class="toggle-info">
-        <div class="toggle-title">Recurrente</div>
-        <div class="toggle-sub">Se repite cada mes</div>
-      </div>
-      <div class="toggle-switch" id="bill-recurring-toggle" onclick="this.classList.toggle('on')"></div>
-    </div>
-    <div style="margin-top:14px"></div>
-    <button class="submit-btn" onclick="saveBill()">Guardar</button>
-    <button onclick="closeModal('modal-bill')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
   </div>
 </div>
 
 <!-- MODAL: Presupuesto -->
 <div class="modal-overlay" id="modal-budget">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nuevo presupuesto</div>
-    <div class="form-group">
-      <label class="form-label">Categoría</label>
-      <select class="form-input" id="budget-cat-select"></select>
+    <div class="modal-header"><div class="modal-handle"></div><div class="modal-title">Nuevo presupuesto</div></div>
+    <div class="modal-scroll">
+      <div class="form-group"><label class="form-label">Categoría</label><select class="form-input" id="budget-cat-select"></select></div>
+      <div class="form-group"><label class="form-label">Límite mensual</label><input type="number" class="form-input big" id="budget-limit" placeholder="$0.00" inputmode="decimal"></div>
+      <button class="submit-btn" onclick="saveBudget()">Guardar</button>
+      <button onclick="closeModal('modal-budget')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Límite mensual</label>
-      <input type="number" class="form-input big" id="budget-limit" placeholder="$0.00" inputmode="decimal">
-    </div>
-    <button class="submit-btn" onclick="saveBudget()">Guardar</button>
-    <button onclick="closeModal('modal-budget')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
   </div>
 </div>
 
 <!-- MODAL: Meta -->
 <div class="modal-overlay" id="modal-goal">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nueva meta</div>
-    <div class="form-group">
-      <label class="form-label">Nombre de la meta</label>
-      <input type="text" class="form-input" id="goal-name" placeholder="Viaje a Japón, iPhone, Boda...">
+    <div class="modal-header"><div class="modal-handle"></div><div class="modal-title">Nueva meta</div></div>
+    <div class="modal-scroll">
+      <div class="form-group"><label class="form-label">Nombre de la meta</label><input type="text" class="form-input" id="goal-name" placeholder="Viaje a Japón, iPhone, Boda..."></div>
+      <div class="form-group"><label class="form-label">Meta total</label><input type="number" class="form-input" id="goal-target" placeholder="0.00" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Ya ahorrado</label><input type="number" class="form-input" id="goal-saved" placeholder="0.00" inputmode="decimal" value="0"></div>
+      <div class="form-group"><label class="form-label">Emoji</label><input type="text" class="form-input" id="goal-emoji" placeholder="🎯 🌏 💍 🏠 ..."></div>
+      <button class="submit-btn" onclick="saveGoal()">Guardar</button>
+      <button onclick="closeModal('modal-goal')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-group">
-        <label class="form-label">Meta total</label>
-        <input type="number" class="form-input" id="goal-target" placeholder="0.00" inputmode="decimal">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Ya ahorrado</label>
-        <input type="number" class="form-input" id="goal-saved" placeholder="0.00" inputmode="decimal" value="0">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Emoji</label>
-      <input type="text" class="form-input" id="goal-emoji" placeholder="🎯 🌏 💍 🏠 ...">
-    </div>
-    <button class="submit-btn" onclick="saveGoal()">Guardar</button>
-    <button onclick="closeModal('modal-goal')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
   </div>
 </div>
 
 <!-- MODAL: Wishlist -->
 <div class="modal-overlay" id="modal-wish">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Agregar a wishlist</div>
-    <div class="form-group">
-      <label class="form-label">¿Qué quieres?</label>
-      <input type="text" class="form-input" id="wish-name" placeholder="AirPods, tenis, cámara...">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-group">
-        <label class="form-label">Precio aprox.</label>
-        <input type="number" class="form-input" id="wish-price" placeholder="0.00" inputmode="decimal">
-      </div>
+    <div class="modal-header"><div class="modal-handle"></div><div class="modal-title">Agregar a wishlist</div></div>
+    <div class="modal-scroll">
+      <div class="form-group"><label class="form-label">¿Qué quieres?</label><input type="text" class="form-input" id="wish-name" placeholder="AirPods, tenis, cámara..."></div>
+      <div class="form-group"><label class="form-label">Precio aprox.</label><input type="number" class="form-input" id="wish-price" placeholder="0.00" inputmode="decimal"></div>
       <div class="form-group">
         <label class="form-label">¿Quién lo quiere?</label>
-        <select class="form-input" id="wish-who">
-          <option value="angel">Angel</option>
-          <option value="novia">Novia</option>
-          <option value="ambos">Los dos</option>
-        </select>
+        <select class="form-input" id="wish-who"><option value="angel">Angel</option><option value="novia">Novia</option><option value="ambos">Los dos</option></select>
       </div>
+      <div class="form-group"><label class="form-label">Enlace (opcional)</label><input type="url" class="form-input" id="wish-url" placeholder="https://..."></div>
+      <button class="submit-btn" onclick="saveWish()">Agregar</button>
+      <button onclick="closeModal('modal-wish')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Enlace (opcional)</label>
-      <input type="url" class="form-input" id="wish-url" placeholder="https://...">
-    </div>
-    <button class="submit-btn" onclick="saveWish()">Agregar</button>
-    <button onclick="closeModal('modal-wish')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
   </div>
 </div>
 
 <!-- MODAL: Tarjeta / Método -->
 <div class="modal-overlay" id="modal-card">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="card-modal-title">Nueva tarjeta</div>
-
-    <div class="form-group">
-      <label class="form-label">Nombre</label>
-      <input type="text" class="form-input" id="card-name" placeholder="BBVA Débito, Nu, Efectivo...">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Tipo</label>
-      <select class="form-input" id="card-type">
-        <option value="débito">Débito</option>
-        <option value="crédito">Crédito</option>
-        <option value="efectivo">Efectivo</option>
-        <option value="transferencia">Transferencia</option>
-        <option value="digital">Billetera digital</option>
-        <option value="otro">Otro</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Emoji / Icono</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="card-emoji-suggestions">
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💳</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🟠</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🟣</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💵</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">📲</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🔵</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🏦</span>
-        <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💰</span>
+    <div class="modal-header"><div class="modal-handle"></div><div class="modal-title" id="card-modal-title">Nueva tarjeta</div></div>
+    <div class="modal-scroll">
+      <div class="form-group"><label class="form-label">Nombre</label><input type="text" class="form-input" id="card-name" placeholder="BBVA Débito, Nu, Efectivo..."></div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="card-type">
+          <option value="débito">Débito</option><option value="crédito">Crédito</option>
+          <option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option>
+          <option value="digital">Billetera digital</option><option value="otro">Otro</option>
+        </select>
       </div>
-      <input type="text" class="form-input" id="card-emoji" placeholder="💳" maxlength="4">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Color de fondo</label>
-      <div class="color-picker-row" id="card-color-picker">
-        <div class="color-swatch selected" data-color="#1e3a5f" style="background:#1e3a5f" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#3a1e5f" style="background:#3a1e5f" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#1e5f3a" style="background:#1e5f3a" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#5f3a1e" style="background:#5f3a1e" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#5f1e1e" style="background:#5f1e1e" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#1e4a5f" style="background:#1e4a5f" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#2a2a2a" style="background:#2a2a2a" onclick="selectCardColor(this)"></div>
-        <div class="color-swatch" data-color="#1e5f5f" style="background:#1e5f5f" onclick="selectCardColor(this)"></div>
+      <div class="form-group">
+        <label class="form-label">Emoji / Icono</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💳</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🟠</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🟣</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💵</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">📲</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🔵</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🏦</span>
+          <span onclick="setCardEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💰</span>
+        </div>
+        <input type="text" class="form-input" id="card-emoji" placeholder="💳" maxlength="4">
       </div>
+      <div class="form-group">
+        <label class="form-label">Color de fondo</label>
+        <div class="color-picker-row" id="card-color-picker">
+          <div class="color-swatch selected" data-color="#1e3a5f" style="background:#1e3a5f" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#3a1e5f" style="background:#3a1e5f" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#1e5f3a" style="background:#1e5f3a" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#5f3a1e" style="background:#5f3a1e" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#5f1e1e" style="background:#5f1e1e" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#1e4a5f" style="background:#1e4a5f" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#2a2a2a" style="background:#2a2a2a" onclick="selectCardColor(this)"></div>
+          <div class="color-swatch" data-color="#1e5f5f" style="background:#1e5f5f" onclick="selectCardColor(this)"></div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Saldo actual (opcional)</label><input type="number" class="form-input" id="card-balance" placeholder="0.00" inputmode="decimal"></div>
+      <input type="hidden" id="card-editing-id">
+      <button class="submit-btn" onclick="saveCard()">Guardar</button>
+      <button onclick="closeModal('modal-card')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
-
-    <div class="form-group">
-      <label class="form-label">Saldo actual (opcional)</label>
-      <input type="number" class="form-input" id="card-balance" placeholder="0.00" inputmode="decimal">
-    </div>
-
-    <input type="hidden" id="card-editing-id">
-    <button class="submit-btn" onclick="saveCard()">Guardar</button>
-    <button onclick="closeModal('modal-card')" style="width:100%;margin-top:8px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
   </div>
 </div>
 
@@ -1411,7 +1384,20 @@ function buildBudgetCatSelect() {
 }
 
 // ── OPEN MODALS ──
+// ── FACTURABLE ──
+let isFacturable = false;
+window.toggleFacturable = function() {
+  isFacturable = !isFacturable;
+  const row = document.getElementById('facturable-row');
+  const box = document.getElementById('facturable-box');
+  row.classList.toggle('checked', isFacturable);
+  box.textContent = isFacturable ? '✓' : '';
+}
+
 window.openTxModal = function() {
+  isFacturable = false;
+  document.getElementById('facturable-row').classList.remove('checked');
+  document.getElementById('facturable-box').textContent = '';
   document.getElementById('tx-date').value = localDate();
   document.getElementById('tx-account').value = S.account;
   // default to first available method
@@ -1461,6 +1447,7 @@ window.saveTx = function() {
     who: document.getElementById('tx-who').value,
     account: document.getElementById('tx-account').value,
     note: document.getElementById('tx-note').value.trim(),
+    facturable: isFacturable,
   };
   S.transactions.unshift(tx);
   saveData('transactions');
@@ -1664,7 +1651,7 @@ function txItemHtml(t) {
     <div class="tx-icon" style="background:${cat.color}22">${cat.emoji}</div>
     <div class="tx-info">
       <div class="tx-name">${t.desc}</div>
-      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}</div>
+      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable?' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾 Facturable</span>':''}</div>
     </div>
     <div class="tx-amount ${cls}">${sign}$${fmt(t.amount)}</div>
   </div>`;
