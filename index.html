@@ -1212,11 +1212,20 @@ const firebaseConfig = {
 let db = null;
 let useCloud = false;
 
-try {
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  useCloud = firebaseConfig.projectId !== "REPLACE_WITH_YOUR_PROJECT_ID";
-} catch(e) { console.warn("Firebase not configured, running locally"); }
+const _projectId = firebaseConfig.projectId;
+const _isConfigured = _projectId && !_projectId.startsWith('REPLACE_');
+
+if (_isConfigured) {
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    useCloud = true;
+  } catch(e) {
+    console.warn("Firebase init failed:", e);
+    db = null;
+    useCloud = false;
+  }
+}
 
 window._db = db;
 window._useCloud = useCloud;
@@ -1298,19 +1307,34 @@ async function cloudLoad(col) {
 // ── LOAD DATA ──
 async function loadAll() {
   const keys = ['transactions','subscriptions','bills','budgets','goals','wishlist','scanHistory','cards'];
+  // Load from localStorage first — always fast
   for (const k of keys) {
     const local = lsGet(k);
     if (local) S[k] = local;
   }
   const users = lsGet('users');
   if (users) S.users = users;
-  if (useCloud) {
-    for (const k of keys) {
-      const cloud = await cloudLoad(k);
-      if (cloud && cloud.length > 0) { S[k] = cloud; lsSet(k, cloud); }
+
+  // Try cloud only if properly configured — with a timeout safety net
+  if (useCloud && db) {
+    try {
+      const cloudFetch = async () => {
+        for (const k of keys) {
+          try {
+            const cloud = await cloudLoad(k);
+            if (cloud && cloud.length > 0) { S[k] = cloud; lsSet(k, cloud); }
+          } catch(e) { console.warn('Cloud load failed for', k, e); }
+        }
+      };
+      // Race against a 5s timeout so a bad connection doesn't freeze the app
+      await Promise.race([
+        cloudFetch(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+      ]);
+    } catch(e) {
+      console.warn('Cloud sync skipped:', e.message);
     }
   }
-  renderAll();
 }
 
 function saveData(key) {
@@ -2327,14 +2351,24 @@ function seedDemoData() {
 
 // ── INIT ──
 async function init() {
-  await loadAll();
-  seedDemoData();
-  S.currentMonth = new Date().getMonth();
-  S.currentYear = new Date().getFullYear();
-  renderAll();
-  setTimeout(()=>{
-    document.getElementById('splash').classList.add('hide');
-  }, 1200);
+  try {
+    await loadAll();
+  } catch(e) {
+    console.warn('loadAll error:', e);
+  }
+  try {
+    seedDemoData();
+    S.currentMonth = new Date().getMonth();
+    S.currentYear = new Date().getFullYear();
+    renderAll();
+  } catch(e) {
+    console.warn('render error:', e);
+  }
+  // Always hide splash — even if something failed
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) splash.classList.add('hide');
+  }, 800);
 }
 
 init();
