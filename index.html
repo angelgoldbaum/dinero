@@ -2542,6 +2542,8 @@ window.openCardModal = function(editId) {
   document.querySelectorAll('#card-color-picker .color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===selectedCardColor));
   openModal('modal-card');
 };
+
+window.selectCardColor = function(el) {
   selectedCardColor=el.dataset.color;
   document.querySelectorAll('#card-color-picker .color-swatch').forEach(s=>s.classList.remove('selected'));
   el.classList.add('selected');
