@@ -139,7 +139,7 @@ body {
 .balance-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 .balance-amount { font-family: var(--serif); font-size: 42px; color: var(--text); letter-spacing: -1px; line-height: 1; }
 .balance-amount span { color: var(--accent); }
-.balance-sub { display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.balance-sub { display: flex; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); overflow: hidden; }
 .bsub { display: flex; flex-direction: column; gap: 2px; }
 .bsub-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .bsub-val { font-size: 15px; font-weight: 500; }
@@ -180,8 +180,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 10px;
   cursor: pointer; transition: border-color 0.2s;
+  width: 100%; min-width: 0; overflow: hidden;
 }
 .tx-item:active { border-color: var(--border2); }
 .tx-icon {
@@ -189,12 +190,18 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
-.tx-info { flex: 1; min-width: 0; }
+.tx-info { flex: 1; min-width: 0; overflow: hidden; }
 .tx-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tx-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.tx-amount { font-size: 15px; font-weight: 600; text-align: right; }
+.tx-meta { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-amount { font-size: 15px; font-weight: 600; text-align: right; flex-shrink: 0; }
 .tx-amount.neg { color: var(--red); }
 .tx-amount.pos { color: var(--accent); }
+.tx-action-btn {
+  font-size: 11px; background: transparent;
+  border: 1px solid var(--border2); border-radius: 6px;
+  padding: 2px 7px; color: var(--muted); cursor: pointer;
+  line-height: 1.4; flex-shrink: 0;
+}
 
 /* Upcoming bills */
 .bill-item {
@@ -213,7 +220,7 @@ body {
 .bill-overdue .bd-num { color: var(--red); }
 
 /* ─── GASTOS/INGRESOS SCREEN ─── */
-.filter-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+.filter-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; max-width: 100%; }
 .filter-row::-webkit-scrollbar { display: none; }
 .filter-chip {
   font-size: 12px; font-weight: 500; padding: 6px 14px;
@@ -239,9 +246,9 @@ body {
   margin-bottom: 16px;
   position: relative;
 }
-.donut-container { display: flex; gap: 20px; align-items: center; }
+.donut-container { display: flex; gap: 16px; align-items: center; width: 100%; min-width: 0; overflow: hidden; }
 .donut-svg { flex-shrink: 0; }
-.donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.donut-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 .dl-item { display: flex; align-items: center; gap: 8px; }
 .dl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dl-name { font-size: 12px; color: var(--muted); flex: 1; }
@@ -1866,16 +1873,16 @@ window.toggleWish = function(id) {
 function txItemHtml(t) {
   if (t.type === 'transfer') {
     return `<div class="tx-item">
-      <div class="tx-icon" style="background:rgba(77,216,192,0.15)">⇄</div>
+      <div class="tx-icon" style="background:rgba(77,216,192,0.15);flex-shrink:0">⇄</div>
       <div class="tx-info">
         <div class="tx-name">${t.desc}</div>
         <div class="tx-meta">${t.date} · <span style="color:var(--teal);font-size:10px;font-weight:600">TRANSFERENCIA</span></div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <div class="tx-amount" style="color:var(--teal)">$${fmt(t.amount)}</div>
         <div style="display:flex;gap:4px">
-          <button onclick="openTxModal(${t.id})" style="font-size:11px;background:transparent;border:1px solid var(--border2);border-radius:6px;padding:2px 8px;color:var(--muted);cursor:pointer">✏️</button>
-          <button onclick="deleteTx(${t.id})" style="font-size:11px;background:transparent;border:1px solid var(--border2);border-radius:6px;padding:2px 8px;color:var(--muted);cursor:pointer">🗑️</button>
+          <button onclick="openTxModal(${t.id})" class="tx-action-btn">✏️</button>
+          <button onclick="deleteTx(${t.id})" class="tx-action-btn">🗑️</button>
         </div>
       </div>
     </div>`;
@@ -1887,16 +1894,16 @@ function txItemHtml(t) {
              : t.who==='novia'  ? '<span class="user-badge novia">N</span>'
              : '<span class="user-badge angel">A</span><span class="user-badge novia">N</span>';
   return `<div class="tx-item">
-    <div class="tx-icon" style="background:${cat.color}22">${cat.emoji}</div>
+    <div class="tx-icon" style="background:${cat.color}22;flex-shrink:0">${cat.emoji}</div>
     <div class="tx-info">
       <div class="tx-name">${t.desc}</div>
       <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable?' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾</span>':''}</div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div class="tx-amount ${cls}">${sign}$${fmt(t.amount)}</div>
       <div style="display:flex;gap:4px">
-        <button onclick="openTxModal(${t.id})" style="font-size:11px;background:transparent;border:1px solid var(--border2);border-radius:6px;padding:2px 8px;color:var(--muted);cursor:pointer">✏️</button>
-        <button onclick="deleteTx(${t.id})" style="font-size:11px;background:transparent;border:1px solid var(--border2);border-radius:6px;padding:2px 8px;color:var(--muted);cursor:pointer">🗑️</button>
+        <button onclick="openTxModal(${t.id})" class="tx-action-btn">✏️</button>
+        <button onclick="deleteTx(${t.id})" class="tx-action-btn">🗑️</button>
       </div>
     </div>
   </div>`;
@@ -2403,11 +2410,14 @@ window.deleteCat = function(type, id) {
 };
 
 function renderCatsSettings() {
-  // Expense cats
   const expList = document.getElementById('expense-cats-list');
   if (expList) {
-    expList.innerHTML = CATEGORIES.map(c=>`
+    expList.innerHTML = CATEGORIES.map((c,i)=>`
       <div class="card-item">
+        <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;margin-right:4px">
+          <button onclick="moveCat('expense',${i},-1)" class="tx-action-btn" style="padding:1px 6px" ${i===0?'disabled style="opacity:0.2;padding:1px 6px"':''}>▲</button>
+          <button onclick="moveCat('expense',${i},1)" class="tx-action-btn" style="padding:1px 6px" ${i===CATEGORIES.length-1?'disabled style="opacity:0.2;padding:1px 6px"':''}>▼</button>
+        </div>
         <div class="card-color-dot" style="background:${c.color}33;font-size:18px">${c.emoji}</div>
         <div class="card-info">
           <div class="card-name">${c.label}</div>
@@ -2422,12 +2432,14 @@ function renderCatsSettings() {
         </div>
       </div>`).join('');
   }
-
-  // Income cats
   const incList = document.getElementById('income-cats-list');
   if (incList) {
-    incList.innerHTML = INCOME_CATEGORIES.map(c=>`
+    incList.innerHTML = INCOME_CATEGORIES.map((c,i)=>`
       <div class="card-item">
+        <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;margin-right:4px">
+          <button onclick="moveCat('income',${i},-1)" class="tx-action-btn" style="padding:1px 6px" ${i===0?'disabled style="opacity:0.2;padding:1px 6px"':''}>▲</button>
+          <button onclick="moveCat('income',${i},1)" class="tx-action-btn" style="padding:1px 6px" ${i===INCOME_CATEGORIES.length-1?'disabled style="opacity:0.2;padding:1px 6px"':''}>▼</button>
+        </div>
         <div class="card-color-dot" style="background:${c.color}33;font-size:18px">${c.emoji}</div>
         <div class="card-info">
           <div class="card-name">${c.label}</div>
@@ -2443,6 +2455,20 @@ function renderCatsSettings() {
       </div>`).join('');
   }
 }
+
+window.moveCat = function(type, index, dir) {
+  const list = type==='income' ? INCOME_CATEGORIES : CATEGORIES;
+  const newIndex = index + dir;
+  if (newIndex < 0 || newIndex >= list.length) return;
+  const temp = list[index];
+  list[index] = list[newIndex];
+  list[newIndex] = temp;
+  if (type==='income') window.INCOME_CATEGORIES = list;
+  else window.CATEGORIES = list;
+  saveCategories(type);
+  renderCatsSettings();
+  buildCatGrid(); buildIncomeCatGrid();
+};
 
 // ── RENDER ALL ──
 function renderAll() {
