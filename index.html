@@ -852,6 +852,22 @@ select.form-input { cursor: pointer; }
   </div>
 
   <div class="settings-section">
+    <div class="settings-section-title">Categorías</div>
+    <div class="tab-bar" style="margin-bottom:12px">
+      <button class="tab-btn active" onclick="setCatSettingsTab('gastos',this)">Gastos</button>
+      <button class="tab-btn" onclick="setCatSettingsTab('ingresos',this)">Ingresos</button>
+    </div>
+    <div id="cat-settings-gastos">
+      <div id="expense-cats-list"></div>
+      <button onclick="openCatModal('expense')" style="width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">+ Agregar categoría de gasto</button>
+    </div>
+    <div id="cat-settings-ingresos" style="display:none">
+      <div id="income-cats-list"></div>
+      <button onclick="openCatModal('income')" style="width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">+ Agregar categoría de ingreso</button>
+    </div>
+  </div>
+
+  <div class="settings-section">
     <div class="settings-section-title">Usuarios</div>
     <div class="card-item">
       <div class="card-color-dot" style="background:rgba(200,242,97,0.15)">👤</div>
@@ -1221,6 +1237,54 @@ select.form-input { cursor: pointer; }
       <input type="hidden" id="card-editing-id">
       <button class="submit-btn" onclick="saveCard()">Guardar</button>
       <button onclick="closeModal('modal-card')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Categoría -->
+<div class="modal-overlay" id="modal-cat">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-handle"></div><div class="modal-title" id="cat-modal-title">Nueva categoría</div></div>
+    <div class="modal-scroll">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-input" id="cat-name" placeholder="Ej: Mascota, Gym, Freelance...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🍔</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🐾</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💪</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">✈️</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🎮</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💻</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🌮</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🎓</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🏋️</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">💼</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🏦</span>
+          <span onclick="setCatEmoji(this)" style="font-size:24px;cursor:pointer;padding:4px">🎁</span>
+        </div>
+        <input type="text" class="form-input" id="cat-emoji" placeholder="📦" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <div class="color-picker-row" id="cat-color-picker">
+          <div class="color-swatch selected" data-color="#ff9840" style="background:#ff9840" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#4dd8c0" style="background:#4dd8c0" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#5c9bff" style="background:#5c9bff" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#ff5c5c" style="background:#ff5c5c" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#b68fff" style="background:#b68fff" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#c8f261" style="background:#c8f261" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#4dd8c0" style="background:#1e9e8a" onclick="selectCatColor(this)"></div>
+          <div class="color-swatch" data-color="#8a8d9a" style="background:#8a8d9a" onclick="selectCatColor(this)"></div>
+        </div>
+      </div>
+      <input type="hidden" id="cat-editing-id">
+      <input type="hidden" id="cat-editing-type">
+      <button class="submit-btn" onclick="saveCat()">Guardar</button>
+      <button onclick="closeModal('modal-cat')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
   </div>
 </div>
@@ -2221,6 +2285,7 @@ window.renderCardsScreen = function() {
         <button class="card-action-btn delete" onclick="deleteCard(${c.id})">🗑️</button>
       </div>
     </div>`).join('') : '<div class="empty-state" style="padding:20px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrega tu primera.</div></div>';
+  renderCatsSettings();
 };
 
 window.editUserName = function(who) {
@@ -2228,6 +2293,156 @@ window.editUserName = function(who) {
   const n=prompt(`Nombre:`,cur);
   if(n&&n.trim()){S.users[who]=n.trim();lsSet('users',S.users);renderCardsScreen();showToast('✓ Nombre actualizado');}
 };
+
+// ── CATEGORIES MANAGEMENT ──
+let selectedCatColor = '#ff9840';
+let currentCatEditType = 'expense'; // 'expense' | 'income'
+
+// Load custom categories from localStorage on top of defaults
+function loadCustomCategories() {
+  const customExp = lsGet('custom_expense_cats');
+  const customInc = lsGet('custom_income_cats');
+  if (customExp) window.CATEGORIES = customExp;
+  if (customInc) window.INCOME_CATEGORIES = customInc;
+}
+
+function saveCategories(type) {
+  if (type === 'expense') lsSet('custom_expense_cats', window.CATEGORIES);
+  else lsSet('custom_income_cats', window.INCOME_CATEGORIES);
+}
+
+window.setCatSettingsTab = function(tab, btn) {
+  document.getElementById('cat-settings-gastos').style.display   = tab==='gastos'   ? 'block' : 'none';
+  document.getElementById('cat-settings-ingresos').style.display = tab==='ingresos' ? 'block' : 'none';
+  document.querySelectorAll('#s-ajustes .tab-bar .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.openCatModal = function(type, editId) {
+  currentCatEditType = type;
+  const isIncome = type === 'income';
+  const list = isIncome ? INCOME_CATEGORIES : CATEGORIES;
+
+  if (editId) {
+    const cat = list.find(c=>c.id===editId);
+    if (!cat) return;
+    document.getElementById('cat-modal-title').textContent = 'Editar categoría';
+    document.getElementById('cat-name').value  = cat.label;
+    document.getElementById('cat-emoji').value = cat.emoji;
+    document.getElementById('cat-editing-id').value   = editId;
+    selectedCatColor = cat.color || '#ff9840';
+  } else {
+    document.getElementById('cat-modal-title').textContent = isIncome ? 'Nueva categoría de ingreso' : 'Nueva categoría de gasto';
+    document.getElementById('cat-name').value  = '';
+    document.getElementById('cat-emoji').value = '';
+    document.getElementById('cat-editing-id').value = '';
+    selectedCatColor = '#ff9840';
+  }
+  document.getElementById('cat-editing-type').value = type;
+  document.querySelectorAll('#cat-color-picker .color-swatch').forEach(s=>
+    s.classList.toggle('selected', s.dataset.color===selectedCatColor)
+  );
+  openModal('modal-cat');
+};
+
+window.selectCatColor = function(el) {
+  selectedCatColor = el.dataset.color;
+  document.querySelectorAll('#cat-color-picker .color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+};
+
+window.setCatEmoji = function(el) {
+  document.getElementById('cat-emoji').value = el.textContent.trim();
+};
+
+window.saveCat = function() {
+  const name  = document.getElementById('cat-name').value.trim();
+  const emoji = document.getElementById('cat-emoji').value.trim() || '📦';
+  if (!name) { showToast('⚠️ Ingresa un nombre'); return; }
+
+  const type    = document.getElementById('cat-editing-type').value;
+  const editId  = document.getElementById('cat-editing-id').value;
+  const isIncome = type === 'income';
+  const list    = isIncome ? INCOME_CATEGORIES : CATEGORIES;
+
+  if (editId) {
+    const idx = list.findIndex(c=>c.id===editId);
+    if (idx>=0) {
+      list[idx] = { ...list[idx], label: name, emoji, color: selectedCatColor };
+      showToast('✓ Categoría actualizada');
+    }
+  } else {
+    // Generate a unique id from the name
+    const id = name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '-' + Date.now();
+    list.push({ id, label: name, emoji, color: selectedCatColor });
+    showToast('✓ Categoría agregada');
+  }
+
+  if (isIncome) window.INCOME_CATEGORIES = list;
+  else window.CATEGORIES = list;
+  saveCategories(type);
+  closeModal('modal-cat');
+  renderCatsSettings();
+  // Refresh grids in tx modal if open
+  buildCatGrid(); buildIncomeCatGrid();
+};
+
+window.deleteCat = function(type, id) {
+  const isIncome = type === 'income';
+  const list = isIncome ? INCOME_CATEGORIES : CATEGORIES;
+  // Prevent deleting if there are transactions using it
+  const inUse = S.transactions.some(t=>t.category===id);
+  if (inUse) { showToast('⚠️ Hay transacciones usando esta categoría'); return; }
+  if (!confirm('¿Eliminar esta categoría?')) return;
+  const filtered = list.filter(c=>c.id!==id);
+  if (isIncome) window.INCOME_CATEGORIES = filtered;
+  else window.CATEGORIES = filtered;
+  saveCategories(type);
+  showToast('✓ Categoría eliminada');
+  renderCatsSettings();
+};
+
+function renderCatsSettings() {
+  // Expense cats
+  const expList = document.getElementById('expense-cats-list');
+  if (expList) {
+    expList.innerHTML = CATEGORIES.map(c=>`
+      <div class="card-item">
+        <div class="card-color-dot" style="background:${c.color}33;font-size:18px">${c.emoji}</div>
+        <div class="card-info">
+          <div class="card-name">${c.label}</div>
+          <div class="card-type" style="display:flex;align-items:center;gap:4px">
+            <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></span>
+            Gasto
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="card-action-btn" onclick="openCatModal('expense','${c.id}')">✏️</button>
+          <button class="card-action-btn delete" onclick="deleteCat('expense','${c.id}')">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Income cats
+  const incList = document.getElementById('income-cats-list');
+  if (incList) {
+    incList.innerHTML = INCOME_CATEGORIES.map(c=>`
+      <div class="card-item">
+        <div class="card-color-dot" style="background:${c.color}33;font-size:18px">${c.emoji}</div>
+        <div class="card-info">
+          <div class="card-name">${c.label}</div>
+          <div class="card-type" style="display:flex;align-items:center;gap:4px">
+            <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></span>
+            Ingreso
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="card-action-btn" onclick="openCatModal('income','${c.id}')">✏️</button>
+          <button class="card-action-btn delete" onclick="deleteCat('income','${c.id}')">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+}
 
 // ── RENDER ALL ──
 function renderAll() {
@@ -2247,6 +2462,7 @@ async function init() {
   try { await initFirebase(); } catch(e) { console.warn('Firebase init error:', e); }
   try { await loadAll(); } catch(e) { console.warn('loadAll error:', e); }
   try {
+    loadCustomCategories(); // restore any user-edited categories
     S.currentMonth = new Date().getMonth();
     S.currentYear  = new Date().getFullYear();
     renderAll();
