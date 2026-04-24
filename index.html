@@ -587,27 +587,44 @@ select.form-input { cursor: pointer; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 13px 14px;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 10px;
   margin-bottom: 6px;
+  width: 100%; min-width: 0; overflow: hidden;
+  box-sizing: border-box;
 }
 .card-color-dot {
   width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
-.card-info { flex: 1; min-width: 0; }
-.card-name { font-size: 14px; font-weight: 500; }
-.card-type { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.card-actions { display: flex; gap: 8px; }
+.card-info { flex: 1; min-width: 0; overflow: hidden; }
+.card-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-type { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .card-action-btn {
-  width: 30px; height: 30px; border-radius: 8px;
+  width: 28px; height: 28px; border-radius: 8px;
   border: 1px solid var(--border2); background: transparent;
-  color: var(--muted); cursor: pointer; font-size: 13px;
+  color: var(--muted); cursor: pointer; font-size: 12px;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
+  transition: all 0.15s; flex-shrink: 0;
 }
 .card-action-btn:active { background: var(--bg3); }
 .card-action-btn.delete:active { border-color: var(--red); color: var(--red); }
+
+/* Drag handle */
+.drag-handle {
+  font-size: 16px; color: var(--muted2); cursor: grab;
+  flex-shrink: 0; padding: 4px 2px; touch-action: none;
+  user-select: none; -webkit-user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.cat-item-dragging {
+  opacity: 0.5; border: 1.5px dashed var(--accent) !important;
+}
+.cat-item-dragover {
+  border-color: var(--accent) !important;
+  background: rgba(200,242,97,0.06) !important;
+}
 
 /* Color picker */
 .color-picker-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -847,7 +864,7 @@ select.form-input { cursor: pointer; }
 </div>
 
 <!-- AJUSTES -->
-<div class="screen" id="s-ajustes">
+<div class="screen" id="s-ajustes" style="overflow-x:hidden">
   <div style="margin-top:14px"></div>
 
   <div class="settings-section">
@@ -2449,60 +2466,121 @@ window.deleteCat = function(type, id) {
   renderCatsSettings();
 };
 
+function catItemHtml(c, type) {
+  return `<div class="card-item cat-draggable" data-id="${c.id}" data-type="${type}">
+    <div class="drag-handle" data-drag="true">⠿</div>
+    <div class="card-color-dot" style="background:${c.color}33;font-size:18px;width:32px;height:32px">${c.emoji}</div>
+    <div class="card-info">
+      <div class="card-name">${c.label}</div>
+      <div class="card-type"><span style="width:7px;height:7px;border-radius:50%;background:${c.color};display:inline-block;margin-right:4px"></span>${type==='income'?'Ingreso':'Gasto'}</div>
+    </div>
+    <div class="card-actions">
+      <button class="card-action-btn" onclick="openCatModal('${type}','${c.id}')">✏️</button>
+      <button class="card-action-btn delete" onclick="deleteCat('${type}','${c.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
 function renderCatsSettings() {
   const expList = document.getElementById('expense-cats-list');
   if (expList) {
-    expList.innerHTML = CATEGORIES.map((c,i)=>`
-      <div class="card-item">
-        <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;margin-right:4px">
-          <button onclick="moveCat('expense',${i},-1)" class="tx-action-btn" style="padding:1px 6px" ${i===0?'disabled style="opacity:0.2;padding:1px 6px"':''}>▲</button>
-          <button onclick="moveCat('expense',${i},1)" class="tx-action-btn" style="padding:1px 6px" ${i===CATEGORIES.length-1?'disabled style="opacity:0.2;padding:1px 6px"':''}>▼</button>
-        </div>
-        <div class="card-color-dot" style="background:${c.color}33;font-size:18px">${c.emoji}</div>
-        <div class="card-info">
-          <div class="card-name">${c.label}</div>
-          <div class="card-type" style="display:flex;align-items:center;gap:4px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></span>
-            Gasto
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="card-action-btn" onclick="openCatModal('expense','${c.id}')">✏️</button>
-          <button class="card-action-btn delete" onclick="deleteCat('expense','${c.id}')">🗑️</button>
-        </div>
-      </div>`).join('');
+    expList.innerHTML = CATEGORIES.map(c => catItemHtml(c, 'expense')).join('');
+    initCatDrag(expList, 'expense');
   }
   const incList = document.getElementById('income-cats-list');
   if (incList) {
-    incList.innerHTML = INCOME_CATEGORIES.map((c,i)=>`
-      <div class="card-item">
-        <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;margin-right:4px">
-          <button onclick="moveCat('income',${i},-1)" class="tx-action-btn" style="padding:1px 6px" ${i===0?'disabled style="opacity:0.2;padding:1px 6px"':''}>▲</button>
-          <button onclick="moveCat('income',${i},1)" class="tx-action-btn" style="padding:1px 6px" ${i===INCOME_CATEGORIES.length-1?'disabled style="opacity:0.2;padding:1px 6px"':''}>▼</button>
-        </div>
-        <div class="card-color-dot" style="background:${c.color}33;font-size:18px">${c.emoji}</div>
-        <div class="card-info">
-          <div class="card-name">${c.label}</div>
-          <div class="card-type" style="display:flex;align-items:center;gap:4px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></span>
-            Ingreso
-          </div>
-        </div>
-        <div class="card-actions">
-          <button class="card-action-btn" onclick="openCatModal('income','${c.id}')">✏️</button>
-          <button class="card-action-btn delete" onclick="deleteCat('income','${c.id}')">🗑️</button>
-        </div>
-      </div>`).join('');
+    incList.innerHTML = INCOME_CATEGORIES.map(c => catItemHtml(c, 'income')).join('');
+    initCatDrag(incList, 'income');
   }
+}
+
+// ── TOUCH DRAG AND DROP ──
+function initCatDrag(container, type) {
+  let dragging = null;
+  let startY = 0;
+  let origIndex = -1;
+  let placeholder = null;
+
+  container.querySelectorAll('.cat-draggable').forEach(item => {
+    item.addEventListener('touchstart', e => {
+      // Only start drag from the handle
+      if (!e.target.closest('[data-drag]')) return;
+      dragging = item;
+      startY = e.touches[0].clientY;
+      origIndex = [...container.children].indexOf(item);
+      item.classList.add('cat-item-dragging');
+      placeholder = document.createElement('div');
+      placeholder.style.cssText = `height:${item.offsetHeight}px;margin-bottom:6px;border-radius:10px;background:rgba(200,242,97,0.06);border:1.5px dashed rgba(200,242,97,0.3);`;
+      e.preventDefault();
+    }, { passive: false });
+  });
+
+  container.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - startY;
+
+    // Move the dragging element visually
+    dragging.style.transform = `translateY(${deltaY}px)`;
+    dragging.style.zIndex = '10';
+    dragging.style.position = 'relative';
+
+    // Find which item we're hovering over
+    const siblings = [...container.querySelectorAll('.cat-draggable:not(.cat-item-dragging)')];
+    siblings.forEach(s => s.classList.remove('cat-item-dragover'));
+
+    const hovered = siblings.find(s => {
+      const r = s.getBoundingClientRect();
+      return touch.clientY >= r.top && touch.clientY <= r.bottom;
+    });
+    if (hovered) hovered.classList.add('cat-item-dragover');
+  }, { passive: false });
+
+  container.addEventListener('touchend', e => {
+    if (!dragging) return;
+    const touch = e.changedTouches[0];
+
+    // Find drop target
+    const siblings = [...container.querySelectorAll('.cat-draggable:not(.cat-item-dragging)')];
+    const target = siblings.find(s => {
+      const r = s.getBoundingClientRect();
+      return touch.clientY >= r.top && touch.clientY <= r.bottom;
+    });
+
+    // Reset visual state
+    dragging.classList.remove('cat-item-dragging');
+    dragging.style.transform = '';
+    dragging.style.zIndex = '';
+    dragging.style.position = '';
+    siblings.forEach(s => s.classList.remove('cat-item-dragover'));
+
+    if (target) {
+      const list = type === 'income' ? INCOME_CATEGORIES : CATEGORIES;
+      const fromId = dragging.dataset.id;
+      const toId   = target.dataset.id;
+      const fromIdx = list.findIndex(c => c.id === fromId);
+      const toIdx   = list.findIndex(c => c.id === toId);
+      if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+        const [moved] = list.splice(fromIdx, 1);
+        list.splice(toIdx, 0, moved);
+        if (type === 'income') window.INCOME_CATEGORIES = list;
+        else window.CATEGORIES = list;
+        saveCategories(type);
+        buildCatGrid(); buildIncomeCatGrid();
+        renderCatsSettings();
+        showToast('✓ Orden actualizado');
+      }
+    }
+    dragging = null;
+  });
 }
 
 window.moveCat = function(type, index, dir) {
   const list = type==='income' ? INCOME_CATEGORIES : CATEGORIES;
   const newIndex = index + dir;
   if (newIndex < 0 || newIndex >= list.length) return;
-  const temp = list[index];
-  list[index] = list[newIndex];
-  list[newIndex] = temp;
+  [list[index], list[newIndex]] = [list[newIndex], list[index]];
   if (type==='income') window.INCOME_CATEGORIES = list;
   else window.CATEGORIES = list;
   saveCategories(type);
