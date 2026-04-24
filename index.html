@@ -859,7 +859,7 @@ select.form-input { cursor: pointer; }
   </div>
 
   <div class="settings-section">
-    <div class="settings-section-title">Categorías</div>
+    <div class="settings-section-title">Categorías · <span id="cats-account-label" style="color:var(--accent)">Personal</span></div>
     <div class="tab-bar" style="margin-bottom:12px">
       <button class="tab-btn active" onclick="setCatSettingsTab('gastos',this)">Gastos</button>
       <button class="tab-btn" onclick="setCatSettingsTab('ingresos',this)">Ingresos</button>
@@ -1337,32 +1337,59 @@ const S = {
 };
 window._state = S;
 
-// ── CATEGORIES ──
-window.CATEGORIES = [
-  { id:'comida',          label:'Comida',        emoji:'🍔', color:'#ff9840' },
-  { id:'super',           label:'Súper',         emoji:'🛒', color:'#4dd8c0' },
-  { id:'transporte',      label:'Transporte',    emoji:'🚗', color:'#5c9bff' },
-  { id:'salud',           label:'Salud',         emoji:'💊', color:'#ff5c5c' },
-  { id:'entretenimiento', label:'Ocio',          emoji:'🎬', color:'#b68fff' },
-  { id:'ropa',            label:'Ropa',          emoji:'👗', color:'#ff9840' },
-  { id:'hogar',           label:'Hogar',         emoji:'🏠', color:'#4dd8c0' },
-  { id:'educacion',       label:'Educación',     emoji:'📚', color:'#5c9bff' },
-  { id:'barberia',        label:'Barbería',      emoji:'✂️', color:'#c8f261' },
-  { id:'sueldo',          label:'Sueldo',        emoji:'💵', color:'#c8f261' },
-  { id:'servicios',       label:'Servicios',     emoji:'💡', color:'#ff9840' },
-  { id:'otro',            label:'Otro',          emoji:'📦', color:'#8a8d9a' },
-];
+// ── CATEGORIES (per account) ──
+const DEFAULT_CATEGORIES = {
+  personal: [
+    { id:'comida',          label:'Comida',          emoji:'🍔', color:'#ff9840' },
+    { id:'super',           label:'Súper',           emoji:'🛒', color:'#4dd8c0' },
+    { id:'transporte',      label:'Transporte',      emoji:'🚗', color:'#5c9bff' },
+    { id:'salud',           label:'Salud',           emoji:'💊', color:'#ff5c5c' },
+    { id:'entretenimiento', label:'Ocio',            emoji:'🎬', color:'#b68fff' },
+    { id:'ropa',            label:'Ropa',            emoji:'👗', color:'#ff9840' },
+    { id:'hogar',           label:'Hogar',           emoji:'🏠', color:'#4dd8c0' },
+    { id:'educacion',       label:'Educación',       emoji:'📚', color:'#5c9bff' },
+    { id:'servicios',       label:'Servicios',       emoji:'💡', color:'#ff9840' },
+    { id:'restaurantes',    label:'Restaurantes',    emoji:'🍽️', color:'#b68fff' },
+    { id:'mascotas',        label:'Mascotas',        emoji:'🐾', color:'#4dd8c0' },
+    { id:'otro',            label:'Otro',            emoji:'📦', color:'#8a8d9a' },
+  ],
+  barberia: [
+    { id:'insumos',         label:'Insumos',         emoji:'✂️', color:'#c8f261' },
+    { id:'sueldos-b',       label:'Sueldos',         emoji:'👥', color:'#5c9bff' },
+    { id:'renta',           label:'Renta',           emoji:'🏠', color:'#4dd8c0' },
+    { id:'servicios-b',     label:'Servicios',       emoji:'💡', color:'#ff9840' },
+    { id:'publicidad',      label:'Publicidad',      emoji:'📣', color:'#b68fff' },
+    { id:'mantenimiento',   label:'Mantenimiento',   emoji:'🔧', color:'#ff5c5c' },
+    { id:'equipo',          label:'Equipo',          emoji:'🪑', color:'#5c9bff' },
+    { id:'limpieza',        label:'Limpieza',        emoji:'🧹', color:'#4dd8c0' },
+    { id:'otro-b',          label:'Otro',            emoji:'📦', color:'#8a8d9a' },
+  ],
+};
 
-window.INCOME_CATEGORIES = [
-  { id:'sueldo',              label:'Sueldo',               emoji:'💵', color:'#c8f261' },
-  { id:'comision',            label:'Comisión',             emoji:'🤝', color:'#4dd8c0' },
-  { id:'rendimiento',         label:'Rendimiento',          emoji:'📈', color:'#5c9bff' },
-  { id:'prestamo',            label:'Préstamo',             emoji:'🏦', color:'#b68fff' },
-  { id:'prestacion-servicio', label:'Prest. de servicio',   emoji:'🛠️', color:'#ff9840' },
-  { id:'venta',               label:'Venta',                emoji:'🏷️', color:'#4dd8c0' },
-  { id:'regalo',              label:'Regalo',               emoji:'🎁', color:'#ff5c5c' },
-  { id:'otro-ingreso',        label:'Otro',                 emoji:'📦', color:'#8a8d9a' },
-];
+const DEFAULT_INCOME_CATEGORIES = {
+  personal: [
+    { id:'sueldo',              label:'Sueldo',              emoji:'💵', color:'#c8f261' },
+    { id:'comision',            label:'Comisión',            emoji:'🤝', color:'#4dd8c0' },
+    { id:'rendimiento',         label:'Rendimiento',         emoji:'📈', color:'#5c9bff' },
+    { id:'prestamo',            label:'Préstamo',            emoji:'🏦', color:'#b68fff' },
+    { id:'prestacion-servicio', label:'Prest. de servicio',  emoji:'🛠️', color:'#ff9840' },
+    { id:'venta',               label:'Venta',               emoji:'🏷️', color:'#4dd8c0' },
+    { id:'regalo',              label:'Regalo',              emoji:'🎁', color:'#ff5c5c' },
+    { id:'otro-ingreso',        label:'Otro',                emoji:'📦', color:'#8a8d9a' },
+  ],
+  barberia: [
+    { id:'cortes',              label:'Cortes',              emoji:'✂️', color:'#c8f261' },
+    { id:'servicios-ing',       label:'Servicios',           emoji:'💈', color:'#4dd8c0' },
+    { id:'productos-venta',     label:'Venta productos',     emoji:'🧴', color:'#5c9bff' },
+    { id:'membresias',          label:'Membresías',          emoji:'🎟️', color:'#b68fff' },
+    { id:'propinas',            label:'Propinas',            emoji:'💰', color:'#ff9840' },
+    { id:'otro-ing-b',          label:'Otro',                emoji:'📦', color:'#8a8d9a' },
+  ],
+};
+
+// Active lists — populated from storage or defaults per account
+window.CATEGORIES        = [...DEFAULT_CATEGORIES.personal];
+window.INCOME_CATEGORIES = [...DEFAULT_INCOME_CATEGORIES.personal];
 
 window.METHODS = [
   { id:'bbva-deb',     label:'BBVA Déb.',   emoji:'💳', type:'débito'    },
@@ -1440,8 +1467,11 @@ function monthName(m) {
   return ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m];
 }
 function getCat(id) {
+  // Search active lists first, then all defaults for historical transactions
   return CATEGORIES.find(c=>c.id===id)
       || INCOME_CATEGORIES.find(c=>c.id===id)
+      || Object.values(DEFAULT_CATEGORIES).flat().find(c=>c.id===id)
+      || Object.values(DEFAULT_INCOME_CATEGORIES).flat().find(c=>c.id===id)
       || {label:id, emoji:'📦', color:'#8a8d9a'};
 }
 
@@ -1468,6 +1498,7 @@ window.setAccount = function(acc) {
   document.querySelectorAll('.apill').forEach(b=>b.classList.remove('active'));
   event.target.classList.add('active');
   document.getElementById('bal-account').textContent = acc==='personal' ? 'Personal' : 'Barbería';
+  loadCategoriesForAccount(acc);
   renderAll();
 };
 
@@ -2283,6 +2314,8 @@ window.renderCardsScreen = function() {
   if(!list) return;
   document.getElementById('settings-name-angel').textContent=S.users.angel||'Angel';
   document.getElementById('settings-name-novia').textContent=S.users.novia||'Novia';
+  const catsLabel = document.getElementById('cats-account-label');
+  if (catsLabel) catsLabel.textContent = S.account==='personal' ? 'Personal' : 'Barbería';
   list.innerHTML=S.cards.length?S.cards.map(c=>`
     <div class="card-item">
       <div class="card-color-dot" style="background:${c.color||'#1e3a5f'}">${c.emoji||'💳'}</div>
@@ -2303,19 +2336,26 @@ window.editUserName = function(who) {
 
 // ── CATEGORIES MANAGEMENT ──
 let selectedCatColor = '#ff9840';
-let currentCatEditType = 'expense'; // 'expense' | 'income'
+let currentCatEditType = 'expense';
 
-// Load custom categories from localStorage on top of defaults
+function getCatKey(type, account) {
+  return `cats_${type}_${account}`;
+}
+
+function loadCategoriesForAccount(account) {
+  const exp = lsGet(getCatKey('expense', account));
+  const inc = lsGet(getCatKey('income', account));
+  window.CATEGORIES        = exp || [...DEFAULT_CATEGORIES[account]        || DEFAULT_CATEGORIES.personal];
+  window.INCOME_CATEGORIES = inc || [...DEFAULT_INCOME_CATEGORIES[account] || DEFAULT_INCOME_CATEGORIES.personal];
+}
+
 function loadCustomCategories() {
-  const customExp = lsGet('custom_expense_cats');
-  const customInc = lsGet('custom_income_cats');
-  if (customExp) window.CATEGORIES = customExp;
-  if (customInc) window.INCOME_CATEGORIES = customInc;
+  loadCategoriesForAccount(S.account);
 }
 
 function saveCategories(type) {
-  if (type === 'expense') lsSet('custom_expense_cats', window.CATEGORIES);
-  else lsSet('custom_income_cats', window.INCOME_CATEGORIES);
+  lsSet(getCatKey(type === 'expense' ? 'expense' : 'income', S.account),
+    type === 'expense' ? window.CATEGORIES : window.INCOME_CATEGORIES);
 }
 
 window.setCatSettingsTab = function(tab, btn) {
