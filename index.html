@@ -30,6 +30,10 @@
   --radius-sm: 10px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
 html { font-size: 16px; }
 body {
   font-family: var(--sans);
@@ -37,6 +41,7 @@ body {
   color: var(--text);
   min-height: 100vh;
   max-width: 430px;
+  width: 100%;
   margin: 0 auto;
   position: relative;
   overflow-x: hidden;
@@ -63,6 +68,8 @@ body {
   backdrop-filter: blur(16px);
   padding: 14px 20px 10px;
   border-bottom: 1px solid var(--border);
+  width: 100%;
+  overflow: hidden;
 }
 .topbar-row { display: flex; align-items: center; justify-content: space-between; }
 .app-name { font-family: var(--serif); font-size: 24px; color: var(--accent); }
@@ -85,6 +92,7 @@ body {
   display: flex; align-items: center; justify-content: space-around;
   padding: 10px 0 max(10px, env(safe-area-inset-bottom));
   z-index: 100;
+  overflow: hidden;
 }
 .nav-btn {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -109,7 +117,7 @@ body {
 #fab:active { transform: scale(0.93); box-shadow: 0 2px 10px rgba(200,242,97,0.2); }
 
 /* ─── SCREENS ─── */
-.screen { display: none; padding: 16px 20px 100px; }
+.screen { display: none; padding: 16px 20px 100px; width: 100%; overflow-x: hidden; }
 .screen.active { display: block; }
 
 /* ─── HOME SCREEN ─── */
@@ -451,7 +459,7 @@ select.form-input { cursor: pointer; }
 .type-btn.active.income { background: rgba(200,242,97,0.15); border-color: var(--accent); color: var(--accent); }
 .type-btn.active.transfer { background: rgba(77,216,192,0.15); border-color: var(--teal); color: var(--teal); }
 
-.categories-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.categories-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; width: 100%; overflow: hidden; }
 .cat-btn {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: var(--bg3); border: 1.5px solid var(--border);
@@ -474,7 +482,7 @@ select.form-input { cursor: pointer; }
 .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
 
 /* Methods */
-.method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; width: 100%; overflow: hidden; }
 .method-btn {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: var(--bg3); border: 1.5px solid var(--border);
