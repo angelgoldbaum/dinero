@@ -383,6 +383,7 @@ body {
   z-index: 200;
   display: none; align-items: flex-end; justify-content: center;
   backdrop-filter: blur(4px);
+  overflow: hidden;
 }
 .modal-overlay.open { display: flex; }
 .modal {
@@ -393,9 +394,11 @@ body {
   max-height: 92vh;
   display: flex; flex-direction: column;
   animation: slideUp 0.25s ease;
+  overflow: hidden;
 }
 .modal-scroll {
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 0 20px max(24px, env(safe-area-inset-bottom));
   flex: 1;
@@ -403,6 +406,7 @@ body {
 .modal-header {
   padding: 20px 20px 0;
   flex-shrink: 0;
+  overflow: hidden;
 }
 @keyframes slideUp {
   from { transform: translateY(100%); }
@@ -1554,7 +1558,13 @@ window.openBudgetModal = function() { buildBudgetCatSelect(); openModal('modal-b
 window.openGoalModal   = function() { openModal('modal-goal'); };
 window.openWishModal   = function() { openModal('modal-wish'); };
 
-function openModal(id)        { document.getElementById(id).classList.add('open'); }
+function openModal(id) {
+  const overlay = document.getElementById(id);
+  overlay.classList.add('open');
+  // Always scroll to top when opening
+  const scrollEl = overlay.querySelector('.modal-scroll');
+  if (scrollEl) scrollEl.scrollTop = 0;
+}
 window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('open'); });
