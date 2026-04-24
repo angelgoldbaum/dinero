@@ -949,15 +949,27 @@ select.form-input { cursor: pointer; }
       </div>
 
       <!-- Campos solo para gasto/ingreso -->
-      <div id="tx-normal-fields">
+      <!-- Campos para gasto -->
+      <div id="tx-expense-fields">
         <div class="form-group">
           <label class="form-label">Categoría</label>
           <div class="categories-grid" id="tx-categories"></div>
         </div>
-
         <div class="form-group">
           <label class="form-label">Método de pago</label>
           <div class="method-grid" id="tx-methods"></div>
+        </div>
+      </div>
+
+      <!-- Campos para ingreso -->
+      <div id="tx-income-fields" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Tipo de ingreso</label>
+          <div class="categories-grid" id="tx-income-categories"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Abonado a</label>
+          <div class="method-grid" id="tx-income-methods"></div>
         </div>
       </div>
 
@@ -987,7 +999,7 @@ select.form-input { cursor: pointer; }
       </div>
 
       <div id="tx-who-field" class="form-group">
-        <label class="form-label">Quién pagó</label>
+        <label class="form-label" id="tx-who-label">Quién pagó</label>
         <select class="form-input" id="tx-who">
           <option value="angel">Angel</option>
           <option value="novia">Novia</option>
@@ -1250,6 +1262,17 @@ window.CATEGORIES = [
   { id:'otro',            label:'Otro',          emoji:'📦', color:'#8a8d9a' },
 ];
 
+window.INCOME_CATEGORIES = [
+  { id:'sueldo',              label:'Sueldo',               emoji:'💵', color:'#c8f261' },
+  { id:'comision',            label:'Comisión',             emoji:'🤝', color:'#4dd8c0' },
+  { id:'rendimiento',         label:'Rendimiento',          emoji:'📈', color:'#5c9bff' },
+  { id:'prestamo',            label:'Préstamo',             emoji:'🏦', color:'#b68fff' },
+  { id:'prestacion-servicio', label:'Prest. de servicio',   emoji:'🛠️', color:'#ff9840' },
+  { id:'venta',               label:'Venta',                emoji:'🏷️', color:'#4dd8c0' },
+  { id:'regalo',              label:'Regalo',               emoji:'🎁', color:'#ff5c5c' },
+  { id:'otro-ingreso',        label:'Otro',                 emoji:'📦', color:'#8a8d9a' },
+];
+
 window.METHODS = [
   { id:'bbva-deb',     label:'BBVA Déb.',   emoji:'💳', type:'débito'    },
   { id:'bbva-cred',    label:'BBVA Créd.',  emoji:'🟠', type:'crédito'   },
@@ -1325,7 +1348,12 @@ function daysUntil(ds) {
 function monthName(m) {
   return ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m];
 }
-function getCat(id) { return CATEGORIES.find(c=>c.id===id) || {label:id, emoji:'📦', color:'#8a8d9a'}; }
+function getCat(id) {
+  return CATEGORIES.find(c=>c.id===id)
+      || INCOME_CATEGORIES.find(c=>c.id===id)
+      || {label:id, emoji:'📦', color:'#8a8d9a'};
+}
+
 
 window.showToast = function(msg) {
   const t = document.getElementById('toast');
@@ -1354,20 +1382,60 @@ window.setAccount = function(acc) {
 
 // ── TX TYPE ──
 let currentTxType = 'expense';
+let selectedIncomeCat = 'sueldo';
+let selectedIncomeMethod = 'efectivo';
+
+function buildIncomeCatGrid() {
+  const g = document.getElementById('tx-income-categories');
+  if (!g) return;
+  g.innerHTML = INCOME_CATEGORIES.map(c=>`
+    <button class="cat-btn${c.id===selectedIncomeCat?' selected':''}" onclick="selectIncomeCat('${c.id}')">
+      <span>${c.emoji}</span><span>${c.label}</span>
+    </button>`).join('');
+}
+window.selectIncomeCat = function(id) { selectedIncomeCat=id; buildIncomeCatGrid(); };
+
+function buildIncomeMethodGrid() {
+  const g = document.getElementById('tx-income-methods');
+  if (!g) return;
+  g.innerHTML = getMethods().map(m=>`
+    <button class="method-btn${String(m.id)===String(selectedIncomeMethod)?' selected':''}" onclick="selectIncomeMethod('${m.id}')">
+      <span>${m.emoji}</span><span>${m.label||m.name}</span>
+    </button>`).join('');
+}
+window.selectIncomeMethod = function(id) { selectedIncomeMethod=id; buildIncomeMethodGrid(); };
+
 window.setTxType = function(t) {
   currentTxType = t;
   document.getElementById('btn-expense').className  = 'type-btn'+(t==='expense' ?' active expense':'');
   document.getElementById('btn-income').className   = 'type-btn'+(t==='income'  ?' active income':'');
   document.getElementById('btn-transfer').className = 'type-btn'+(t==='transfer'?' active transfer':'');
-  const isTr = t==='transfer';
-  document.getElementById('tx-normal-fields').style.display    = isTr ? 'none'  : 'block';
-  document.getElementById('tx-transfer-fields').style.display  = isTr ? 'block' : 'none';
-  document.getElementById('tx-facturable-field').style.display = isTr ? 'none'  : 'block';
-  document.getElementById('tx-who-field').style.display        = isTr ? 'none'  : 'block';
-  document.getElementById('tx-desc-label').textContent         = isTr ? 'Nota / descripción' : 'Descripción';
-  document.getElementById('tx-desc').placeholder               = isTr ? 'Ej: Pago de quincena...' : '¿En qué gastaste?';
-  document.querySelector('#modal-tx .submit-btn').textContent   = isTr ? 'Registrar transferencia' : 'Guardar';
-  if (isTr) buildTransferSelects();
+
+  const isExp = t==='expense';
+  const isInc = t==='income';
+  const isTr  = t==='transfer';
+
+  document.getElementById('tx-expense-fields').style.display   = isExp ? 'block' : 'none';
+  document.getElementById('tx-income-fields').style.display    = isInc ? 'block' : 'none';
+  document.getElementById('tx-transfer-fields').style.display  = isTr  ? 'block' : 'none';
+  document.getElementById('tx-facturable-field').style.display = isExp ? 'block' : 'none';
+  document.getElementById('tx-who-field').style.display        = isTr  ? 'none'  : 'block';
+
+  // Desc label & placeholder
+  document.getElementById('tx-desc-label').textContent =
+    isInc ? 'Descripción' : isTr ? 'Nota / descripción' : 'Descripción';
+  document.getElementById('tx-desc').placeholder =
+    isInc ? 'Ej: Quincena 1ra semana...' : isTr ? 'Ej: Pago de quincena...' : '¿En qué gastaste?';
+
+  // Who label
+  document.getElementById('tx-who-label').textContent =
+    isInc ? 'Quién lo recibe' : 'Quién pagó';
+
+  document.querySelector('#modal-tx .submit-btn').textContent =
+    isTr ? 'Registrar transferencia' : 'Guardar';
+
+  if (isTr)  buildTransferSelects();
+  if (isInc) { buildIncomeCatGrid(); buildIncomeMethodGrid(); }
 };
 
 function buildTransferSelects() {
@@ -1421,11 +1489,13 @@ window.openTxModal = function(txId) {
   document.getElementById('btn-expense').className  = 'type-btn active expense';
   document.getElementById('btn-income').className   = 'type-btn income';
   document.getElementById('btn-transfer').className = 'type-btn transfer';
-  document.getElementById('tx-normal-fields').style.display    = 'block';
+  document.getElementById('tx-expense-fields').style.display   = 'block';
+  document.getElementById('tx-income-fields').style.display    = 'none';
   document.getElementById('tx-transfer-fields').style.display  = 'none';
   document.getElementById('tx-facturable-field').style.display = 'block';
   document.getElementById('tx-who-field').style.display        = 'block';
   document.getElementById('tx-desc-label').textContent         = 'Descripción';
+  document.getElementById('tx-who-label').textContent          = 'Quién pagó';
   document.getElementById('tx-desc').placeholder               = '¿En qué gastaste?';
   document.querySelector('#modal-tx .submit-btn').textContent   = 'Guardar';
 
@@ -1444,9 +1514,11 @@ window.openTxModal = function(txId) {
     document.getElementById('tx-who').value    = tx.who || 'angel';
     document.getElementById('tx-account').value= tx.account || 'personal';
     document.getElementById('tx-note').value   = tx.note || '';
-    selectedCat    = tx.category || 'otro';
-    selectedMethod = String(tx.method) || String(methods[0]?.id);
-    isFacturable   = tx.facturable || false;
+    selectedCat          = tx.category || 'otro';
+    selectedMethod       = String(tx.method) || String(methods[0]?.id);
+    selectedIncomeCat    = tx.category || 'sueldo';
+    selectedIncomeMethod = String(tx.method) || String(methods[0]?.id);
+    isFacturable         = tx.facturable || false;
     if (isFacturable) {
       document.getElementById('facturable-row').classList.add('checked');
       document.getElementById('facturable-box').textContent = '✓';
@@ -1460,7 +1532,7 @@ window.openTxModal = function(txId) {
     document.getElementById('tx-account').value= S.account;
     document.getElementById('tx-note').value   = '';
   }
-  buildCatGrid(); buildMethodGrid();
+  buildCatGrid(); buildMethodGrid(); buildIncomeCatGrid(); buildIncomeMethodGrid();
   openModal('modal-tx');
 };
 
@@ -1516,12 +1588,13 @@ window.saveTx = function() {
   const tx = {
     id: editingTxId || Date.now(),
     type: currentTxType, amount: amt, desc,
-    category: selectedCat, method: selectedMethod,
+    category: currentTxType==='income' ? selectedIncomeCat : selectedCat,
+    method:   currentTxType==='income' ? selectedIncomeMethod : selectedMethod,
     date: document.getElementById('tx-date').value,
     who: document.getElementById('tx-who').value,
     account: document.getElementById('tx-account').value,
     note: document.getElementById('tx-note').value.trim(),
-    facturable: isFacturable,
+    facturable: currentTxType==='expense' ? isFacturable : false,
   };
   upsertTx(tx);
 };
