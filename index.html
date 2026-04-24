@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── THEME: Oscuro (default) ── */
 :root {
   --bg: #0e0f11;
   --bg2: #161820;
@@ -29,6 +30,79 @@
   --radius: 16px;
   --radius-sm: 10px;
 }
+
+/* ── THEME: Atardecer ── */
+html.theme-atardecer {
+  --bg: #1a1208;
+  --bg2: #231a0d;
+  --bg3: #2e2210;
+  --card: #261d0e;
+  --border: rgba(207,182,118,0.1);
+  --border2: rgba(207,182,118,0.2);
+  --text: #f5ead8;
+  --muted: #a08c6e;
+  --muted2: #6b5c42;
+  --accent: #CFB676;
+  --accent2: #B97C2B;
+  --red: #B54E20;
+  --blue: #B97C2B;
+  --orange: #B54E20;
+  --purple: #CFB676;
+  --teal: #8D8436;
+  --serif: 'DM Serif Display', serif;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+/* ── THEME: Industrial ── */
+html.theme-industrial {
+  --bg: #0f0d0b;
+  --bg2: #1a1613;
+  --bg3: #221e1a;
+  --card: #1e1a16;
+  --border: rgba(180,140,100,0.08);
+  --border2: rgba(180,140,100,0.15);
+  --text: #e8ddd0;
+  --muted: #8a7a6a;
+  --muted2: #5a4e42;
+  --accent: #c0392b;
+  --accent2: #a93226;
+  --red: #c0392b;
+  --blue: #7f8c3a;
+  --orange: #8B4513;
+  --purple: #6b4f3a;
+  --teal: #4a5e3a;
+  --serif: 'DM Serif Display', serif;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+/* ── THEME: Océano ── */
+html.theme-oceano {
+  --bg: #060d18;
+  --bg2: #0a1525;
+  --bg3: #0f1e34;
+  --card: #0c1a2e;
+  --border: rgba(100,200,255,0.08);
+  --border2: rgba(100,200,255,0.15);
+  --text: #e0f0ff;
+  --muted: #6a90b8;
+  --muted2: #3a5878;
+  --accent: #00d4ff;
+  --accent2: #00b8e0;
+  --red: #ff4d6d;
+  --blue: #4d9fff;
+  --orange: #ff9f43;
+  --purple: #a29bfe;
+  --teal: #00cec9;
+  --serif: 'DM Serif Display', serif;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body {
   overflow-x: hidden;
@@ -70,8 +144,7 @@ body {
   position: fixed; inset: 0; background: var(--bg);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   z-index: 1000; transition: opacity 0.5s;
-}
-#splash h1 { font-family: var(--serif); font-size: 56px; color: var(--accent); letter-spacing: -1px; }
+}#splash h1 { font-family: var(--serif); font-size: 56px; color: var(--accent); letter-spacing: -1px; }
 #splash p { color: var(--muted); font-size: 13px; margin-top: 6px; font-weight: 300; }
 #splash.hide { opacity: 0; pointer-events: none; }
 
@@ -896,7 +969,11 @@ select.form-input { cursor: pointer; }
   <div style="margin-top:14px"></div>
 
   <div class="settings-section">
-    <div class="settings-section-title">Tarjetas y métodos de pago</div>
+    <div class="settings-section-title">Tema de color</div>
+    <div id="theme-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+  </div>
+
+  <div class="settings-section">
     <div id="cards-list"></div>
     <button onclick="openCardModal()" style="width:100%;padding:12px;background:transparent;border:1.5px dashed var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">
       + Agregar tarjeta o método
@@ -2361,8 +2438,7 @@ window.renderCardsScreen = function() {
   document.getElementById('settings-name-novia').textContent=S.users.novia||'Novia';
   const catsLabel = document.getElementById('cats-account-label');
   if (catsLabel) catsLabel.textContent = S.account==='personal' ? 'Personal' : 'Barbería';
-  list.innerHTML=S.cards.length?S.cards.map(c=>`
-    <div class="card-item">
+  list.innerHTML=S.cards.length?S.cards.map(c=>`    <div class="card-item">
       <div class="card-color-dot" style="background:${c.color||'#1e3a5f'}">${c.emoji||'💳'}</div>
       <div class="card-info"><div class="card-name">${c.name}</div><div class="card-type">${c.type}${c.balance?' · $'+fmt(c.balance):''}</div></div>
       <div class="card-actions">
@@ -2371,6 +2447,7 @@ window.renderCardsScreen = function() {
       </div>
     </div>`).join('') : '<div class="empty-state" style="padding:20px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrega tu primera.</div></div>';
   renderCatsSettings();
+  renderThemeGrid();
 };
 
 window.editUserName = function(who) {
@@ -2616,6 +2693,69 @@ window.moveCat = function(type, index, dir) {
   buildCatGrid(); buildIncomeCatGrid();
 };
 
+// ── THEME MANAGEMENT ──
+const THEMES = [
+  {
+    id: 'oscuro',
+    name: 'Oscuro',
+    emoji: '🌙',
+    desc: 'Verde lima sobre negro',
+    preview: ['#0e0f11', '#1a1c24', '#c8f261', '#5c9bff'],
+  },
+  {
+    id: 'atardecer',
+    name: 'Atardecer',
+    emoji: '🌅',
+    desc: 'Dorado, naranja y verde',
+    preview: ['#1a1208', '#261d0e', '#CFB676', '#B54E20'],
+  },
+  {
+    id: 'industrial',
+    name: 'Industrial',
+    emoji: '🏭',
+    desc: 'Ladrillo, negro y café',
+    preview: ['#0f0d0b', '#1e1a16', '#c0392b', '#4a5e3a'],
+  },
+  {
+    id: 'oceano',
+    name: 'Océano',
+    emoji: '🌊',
+    desc: 'Azules profundos y cyan',
+    preview: ['#060d18', '#0c1a2e', '#00d4ff', '#4d9fff'],
+  },
+];
+
+function applyTheme(id) {
+  document.documentElement.className = id === 'oscuro' ? '' : `theme-${id}`;
+  lsSet('theme', id);
+  renderThemeGrid();
+}
+
+function renderThemeGrid() {
+  const current = lsGet('theme') || 'oscuro';
+  const grid = document.getElementById('theme-grid');
+  if (!grid) return;
+  grid.innerHTML = THEMES.map(t => {
+    const active = t.id === current;
+    return `<div onclick="applyTheme('${t.id}')" style="
+      background:${t.preview[0]};
+      border:2px solid ${active ? t.preview[2] : 'rgba(255,255,255,0.08)'};
+      border-radius:14px; padding:14px; cursor:pointer;
+      transition:border-color 0.2s, transform 0.15s;
+      position:relative; overflow:hidden;
+      ${active ? 'transform:scale(1.02)' : ''}
+    ">
+      ${active ? `<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:${t.preview[2]};display:flex;align-items:center;justify-content:center;font-size:10px">✓</div>` : ''}
+      <div style="display:flex;gap:5px;margin-bottom:10px">
+        ${t.preview.map(c=>`<div style="width:14px;height:14px;border-radius:4px;background:${c};flex-shrink:0"></div>`).join('')}
+      </div>
+      <div style="font-size:16px;margin-bottom:3px">${t.emoji}</div>
+      <div style="font-size:13px;font-weight:600;color:${t.preview[2]}">${t.name}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">${t.desc}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── RENDER ALL ──
 function renderAll() {
   renderHome();
@@ -2634,7 +2774,10 @@ async function init() {
   try { await initFirebase(); } catch(e) { console.warn('Firebase init error:', e); }
   try { await loadAll(); } catch(e) { console.warn('loadAll error:', e); }
   try {
-    loadCustomCategories(); // restore any user-edited categories
+    // Restore saved theme immediately
+    const savedTheme = lsGet('theme') || 'oscuro';
+    applyTheme(savedTheme);
+    loadCustomCategories();
     S.currentMonth = new Date().getMonth();
     S.currentYear  = new Date().getFullYear();
     renderAll();
