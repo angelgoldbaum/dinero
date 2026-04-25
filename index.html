@@ -808,9 +808,19 @@ select.form-input { cursor: pointer; }
   <!-- Balance card -->
   <div class="balance-card">
     <div class="balance-label">Balance actual · <span id="bal-account">Personal</span></div>
-    <div class="balance-amount">$<span id="bal-amount">0</span></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:4px" id="bal-currency-label">MXN</div>
-    <div class="balance-sub">
+
+    <!-- MXN balance -->
+    <div id="bal-mxn-row">
+      <div class="balance-amount">$<span id="bal-amount-mxn">0</span> <span style="font-size:18px;color:var(--muted);font-family:var(--sans);font-weight:400">MXN</span></div>
+    </div>
+    <!-- USD balance (shown only when there are USD transactions) -->
+    <div id="bal-usd-row" style="display:none">
+      <div style="font-family:var(--serif);font-size:26px;color:var(--blue);letter-spacing:-0.5px;margin-top:4px">US$<span id="bal-amount-usd">0</span></div>
+    </div>
+    <!-- Equivalente total -->
+    <div id="bal-equiv-row" style="display:none;font-size:11px;color:var(--muted);margin-top:3px" >≈ <span id="bal-equiv"></span> MXN total</div>
+
+    <div class="balance-sub" style="margin-top:14px">
       <div class="bsub">
         <div class="bsub-label">Ingresos</div>
         <div class="bsub-val income" id="bal-income">$0</div>
@@ -1194,7 +1204,14 @@ select.form-input { cursor: pointer; }
     <div class="modal-scroll">
       <div class="form-group">
         <label class="form-label">Monto</label>
-        <input type="number" class="form-input big" id="tx-amount" placeholder="$0.00" inputmode="decimal" min="0" step="0.01">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" class="form-input big" id="tx-amount" placeholder="0.00" inputmode="decimal" min="0" step="0.01" style="flex:1">
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+            <button id="tx-cur-mxn" onclick="setTxCurrency('MXN')" style="padding:6px 10px;border-radius:6px;border:1.5px solid var(--accent);background:rgba(200,242,97,0.1);color:var(--accent);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;width:52px">MXN</button>
+            <button id="tx-cur-usd" onclick="setTxCurrency('USD')" style="padding:6px 10px;border-radius:6px;border:1.5px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;width:52px">USD</button>
+          </div>
+        </div>
+        <div id="tx-equiv-label" style="font-size:11px;color:var(--muted);margin-top:5px;display:none"></div>
       </div>
 
       <div class="form-group">
@@ -1872,6 +1889,10 @@ window.openTxModal = function(txId) {
   isFacturable = false;
   document.getElementById('facturable-row').classList.remove('checked');
   document.getElementById('facturable-box').textContent = '';
+  // Reset currency to default
+  currentTxCurrency = 'MXN';
+  setTxCurrency('MXN');
+  document.getElementById('tx-equiv-label').style.display = 'none';
   currentTxType = 'expense';
   document.getElementById('btn-expense').className  = 'type-btn active expense';
   document.getElementById('btn-income').className   = 'type-btn income';
@@ -1906,6 +1927,9 @@ window.openTxModal = function(txId) {
     selectedIncomeCat    = tx.category || 'sueldo';
     selectedIncomeMethod = String(tx.method) || String(methods[0]?.id);
     isFacturable         = tx.facturable || false;
+    // Restore currency
+    currentTxCurrency = tx.currency || 'MXN';
+    setTxCurrency(currentTxCurrency);
     if (isFacturable) {
       document.getElementById('facturable-row').classList.add('checked');
       document.getElementById('facturable-box').textContent = '✓';
@@ -1920,6 +1944,9 @@ window.openTxModal = function(txId) {
     document.getElementById('tx-note').value   = '';
   }
   buildCatGrid(); buildMethodGrid(); buildIncomeCatGrid(); buildIncomeMethodGrid();
+  // Live equiv label update
+  const amtInput = document.getElementById('tx-amount');
+  amtInput.oninput = () => updateTxEquivLabel(parseFloat(amtInput.value)||0, currentTxCurrency);
   openModal('modal-tx');
 };
 
@@ -2033,9 +2060,13 @@ window.saveTx = function() {
   }
 
   if (!desc) { showToast('⚠️ Escribe una descripción'); return; }
+  const rate = S.exchangeRate || 17.5;
+  const amountMXN = currentTxCurrency === 'USD' ? amt * rate : amt;
   const tx = {
     id: editingTxId || Date.now(),
-    type: currentTxType, amount: amt, desc,
+    type: currentTxType, amount: amountMXN, // always store in MXN internally
+    amountOrig: amt, currency: currentTxCurrency, // original amount and currency
+    desc,
     category: currentTxType==='income' ? selectedIncomeCat : selectedCat,
     method:   currentTxType==='income' ? selectedIncomeMethod : selectedMethod,
     date: document.getElementById('tx-date').value,
@@ -2189,15 +2220,23 @@ function txItemHtml(t) {
   const who  = t.who==='angel'  ? '<span class="user-badge angel">A</span>'
              : t.who==='novia'  ? '<span class="user-badge novia">N</span>'
              : '<span class="user-badge angel">A</span><span class="user-badge novia">N</span>';
+  // Show original currency if USD, with MXN equivalent below
+  const amountDisplay = t.currency === 'USD'
+    ? `${sign}US$${fmt(t.amountOrig || t.amount)}`
+    : `${sign}$${fmt(t.amount)}`;
+  const amountSub = t.currency === 'USD'
+    ? `<div style="font-size:10px;color:var(--muted)">≈$${fmt(t.amount)} MXN</div>`
+    : '';
   return `<div class="tx-item">
     <div class="tx-icon" style="background:${cat.color}22;flex-shrink:0">${cat.emoji}</div>
     <div class="tx-info">
       <div class="tx-name">${t.desc}</div>
       <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable?' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾</span>':''}</div>
     </div>
-    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div class="tx-amount ${cls}">${sign}$${fmt(t.amount)}</div>
-      <div style="display:flex;gap:4px">
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div class="tx-amount ${cls}" style="${t.currency==='USD'?'color:var(--blue)':''}">${amountDisplay}</div>
+      ${amountSub}
+      <div style="display:flex;gap:4px;margin-top:2px">
         <button onclick="openTxModal(${t.id})" class="tx-action-btn">✏️</button>
         <button onclick="deleteTx(${t.id})" class="tx-action-btn">🗑️</button>
       </div>
@@ -2211,25 +2250,44 @@ function renderHome() {
   const now = new Date(), month = now.getMonth(), year = now.getFullYear();
   const txs = S.transactions.filter(t=>t.account===acc);
   const mTxs = txs.filter(t=>{ const d=new Date(t.date+'T00:00:00'); return d.getMonth()===month&&d.getFullYear()===year; });
-  const income  = mTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  // Only count expenses paid with debit/cash (not credit cards)
-  const expense = mTxs.filter(t=>t.type==='expense' && !isCreditCard(t.method)).reduce((s,t)=>s+t.amount,0);
-  // Credit payments count as real outflow from debit/cash
-  const creditPaid = mTxs.filter(t=>t.type==='credit-payment').reduce((s,t)=>s+t.amount,0);
-  const balance = income - expense - creditPaid;
+  const income      = mTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense     = mTxs.filter(t=>t.type==='expense' && !isCreditCard(t.method)).reduce((s,t)=>s+t.amount,0);
+  const creditPaid  = mTxs.filter(t=>t.type==='credit-payment').reduce((s,t)=>s+t.amount,0);
+  const balance     = income - expense - creditPaid;
 
-  const displayBalance = S.currency === 'USD' ? (Math.abs(balance) / (S.exchangeRate||17.5)) : Math.abs(balance);
-  document.getElementById('bal-amount').textContent = fmt(displayBalance);
-  document.getElementById('bal-amount').parentElement.children[0].textContent = getCurrencySymbol();
-  document.getElementById('bal-amount').parentElement.style.color = balance<0 ? 'var(--red)' : 'var(--text)';
-  document.getElementById('bal-income').textContent  = fmtCurrency(income);
-  document.getElementById('bal-expense').textContent = fmtCurrency(expense + creditPaid);
+  // Separate USD vs MXN transactions for display
+  const rate = S.exchangeRate || 17.5;
+  const usdTxs   = mTxs.filter(t => t.currency === 'USD' && t.type !== 'transfer' && t.type !== 'credit-payment');
+  const hasUSD   = usdTxs.length > 0;
+
+  const usdIncome  = usdTxs.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amountOrig||t.amount/rate),0);
+  const usdExpense = usdTxs.filter(t=>t.type==='expense' && !isCreditCard(t.method)).reduce((s,t)=>s+(t.amountOrig||t.amount/rate),0);
+  const usdBalance = usdIncome - usdExpense;
+
+  const mxnBalance = balance - (usdBalance * rate); // balance from MXN-only transactions
+
+  // Update MXN balance
+  document.getElementById('bal-amount-mxn').textContent = fmt(Math.abs(mxnBalance));
+  document.getElementById('bal-mxn-row').style.color = mxnBalance < 0 ? 'var(--red)' : 'var(--text)';
+
+  // Update USD balance
+  const usdRow   = document.getElementById('bal-usd-row');
+  const equivRow = document.getElementById('bal-equiv-row');
+  if (hasUSD) {
+    document.getElementById('bal-amount-usd').textContent = fmt(Math.abs(usdBalance));
+    usdRow.style.display   = 'block';
+    usdRow.style.color     = usdBalance < 0 ? 'var(--red)' : 'var(--blue)';
+    equivRow.style.display = 'block';
+    document.getElementById('bal-equiv').textContent = fmt(Math.abs(balance));
+  } else {
+    usdRow.style.display   = 'none';
+    equivRow.style.display = 'none';
+  }
+
+  document.getElementById('bal-income').textContent  = '$'+fmt(income);
+  document.getElementById('bal-expense').textContent = '$'+fmt(expense + creditPaid);
   document.getElementById('bal-month').textContent   = monthName(month).slice(0,3)+' '+year;
   document.getElementById('bal-account').textContent = acc==='personal' ? 'Personal' : 'Barbería';
-  const currLabel = document.getElementById('bal-currency-label');
-  if (currLabel) currLabel.textContent = S.currency === 'USD'
-    ? `USD · TC: $${(S.exchangeRate||17.5).toFixed(2)}`
-    : 'MXN';
 
   // Mini bar chart
   const chart = document.getElementById('mini-chart');
@@ -3127,6 +3185,40 @@ function renderCreditScreen() {
         </div>
       </div>`;
     }).join('');
+  }
+}
+
+// ── TX CURRENCY ──
+let currentTxCurrency = 'MXN';
+
+window.setTxCurrency = function(cur) {
+  currentTxCurrency = cur;
+  const mxnBtn = document.getElementById('tx-cur-mxn');
+  const usdBtn = document.getElementById('tx-cur-usd');
+  const equivLabel = document.getElementById('tx-equiv-label');
+  if (mxnBtn) {
+    mxnBtn.style.border     = cur==='MXN' ? '1.5px solid var(--accent)' : '1.5px solid var(--border2)';
+    mxnBtn.style.background = cur==='MXN' ? 'rgba(200,242,97,0.1)'      : 'transparent';
+    mxnBtn.style.color      = cur==='MXN' ? 'var(--accent)'              : 'var(--muted)';
+    usdBtn.style.border     = cur==='USD' ? '1.5px solid var(--blue)'   : '1.5px solid var(--border2)';
+    usdBtn.style.background = cur==='USD' ? 'rgba(92,155,255,0.1)'      : 'transparent';
+    usdBtn.style.color      = cur==='USD' ? 'var(--blue)'                : 'var(--muted)';
+  }
+  // Show equivalent hint
+  const amt = parseFloat(document.getElementById('tx-amount')?.value) || 0;
+  updateTxEquivLabel(amt, cur);
+};
+
+function updateTxEquivLabel(amt, cur) {
+  const label = document.getElementById('tx-equiv-label');
+  if (!label) return;
+  const rate = S.exchangeRate || 17.5;
+  if (!amt || amt === 0) { label.style.display = 'none'; return; }
+  label.style.display = 'block';
+  if (cur === 'USD') {
+    label.textContent = `≈ $${fmt(amt * rate)} MXN (TC: $${rate.toFixed(2)})`;
+  } else {
+    label.textContent = `≈ US$${fmt(amt / rate)} USD (TC: $${rate.toFixed(2)})`;
   }
 }
 
