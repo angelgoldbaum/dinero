@@ -1966,11 +1966,67 @@ window.openTxModal = function(txId) {
   openModal('modal-tx');
 };
 
-window.openSubModal    = function() { openModal('modal-sub'); };
-window.openBillModal   = function() {
-  const d = new Date(); d.setDate(d.getDate()+7);
-  document.getElementById('bill-due').value = d.toISOString().split('T')[0];
+let editingSubId = null;
+window.openSubModal = function(editId) {
+  editingSubId = editId || null;
+  if (editId) {
+    const sub = S.subscriptions.find(s=>s.id===editId);
+    if (!sub) return;
+    document.querySelector('#modal-sub .modal-title').textContent = 'Editar suscripción';
+    document.getElementById('sub-name').value   = sub.name;
+    document.getElementById('sub-amount').value = sub.amount;
+    document.getElementById('sub-freq').value   = sub.freq;
+    document.getElementById('sub-day').value    = sub.day;
+    document.getElementById('sub-method').value = sub.method;
+    document.getElementById('sub-emoji').value  = sub.emoji;
+  } else {
+    document.querySelector('#modal-sub .modal-title').textContent = 'Nueva suscripción';
+    document.getElementById('sub-name').value   = '';
+    document.getElementById('sub-amount').value = '';
+    document.getElementById('sub-freq').value   = 'mensual';
+    document.getElementById('sub-day').value    = '';
+    document.getElementById('sub-emoji').value  = '';
+  }
+  openModal('modal-sub');
+};
+let editingBillId = null;
+window.openBillModal = function(editId) {
+  editingBillId = editId || null;
+  if (editId) {
+    const bill = S.bills.find(b=>b.id===editId);
+    if (!bill) return;
+    document.querySelector('#modal-bill .modal-title').textContent = 'Editar recibo';
+    document.getElementById('bill-name').value   = bill.name;
+    document.getElementById('bill-amount').value = bill.amount;
+    document.getElementById('bill-due').value    = bill.due;
+    document.getElementById('bill-cat').value    = bill.cat;
+    const toggle = document.getElementById('bill-recurring-toggle');
+    if (bill.recurring) toggle.classList.add('on'); else toggle.classList.remove('on');
+  } else {
+    document.querySelector('#modal-bill .modal-title').textContent = 'Recibo por pagar';
+    document.getElementById('bill-name').value   = '';
+    document.getElementById('bill-amount').value = '';
+    document.getElementById('bill-recurring-toggle').classList.remove('on');
+    const d = new Date(); d.setDate(d.getDate()+7);
+    document.getElementById('bill-due').value = d.toISOString().split('T')[0];
+  }
   openModal('modal-bill');
+};
+
+window.deleteSub = function(id) {
+  if (!confirm('¿Eliminar esta suscripción?')) return;
+  S.subscriptions = S.subscriptions.filter(s=>s.id!==id);
+  saveData('subscriptions');
+  showToast('✓ Suscripción eliminada');
+  renderSubsScreen(); renderHome();
+};
+
+window.deleteBill = function(id) {
+  if (!confirm('¿Eliminar este recibo?')) return;
+  S.bills = S.bills.filter(b=>b.id!==id);
+  saveData('bills');
+  showToast('✓ Recibo eliminado');
+  renderBillsTab(); renderHome();
 };
 window.openBudgetModal = function() { buildBudgetCatSelect(); openModal('modal-budget'); };
 window.openGoalModal   = function() { openModal('modal-goal'); };
@@ -2121,17 +2177,25 @@ window.saveSub = function() {
   const name = document.getElementById('sub-name').value.trim();
   const amt  = parseFloat(document.getElementById('sub-amount').value);
   if (!name || !amt) { showToast('⚠️ Completa los campos'); return; }
-  S.subscriptions.push({
-    id: Date.now(), name, amount: amt,
-    freq: document.getElementById('sub-freq').value,
-    day: parseInt(document.getElementById('sub-day').value)||1,
+  const sub = {
+    id: editingSubId || Date.now(),
+    name, amount: amt,
+    freq:   document.getElementById('sub-freq').value,
+    day:    parseInt(document.getElementById('sub-day').value)||1,
     method: document.getElementById('sub-method').value,
-    emoji: document.getElementById('sub-emoji').value || '🔄',
+    emoji:  document.getElementById('sub-emoji').value || '🔄',
     account: S.account, active: true,
-  });
+  };
+  if (editingSubId) {
+    const idx = S.subscriptions.findIndex(s=>s.id===editingSubId);
+    if (idx>=0) S.subscriptions[idx] = sub;
+    showToast('✓ Suscripción actualizada');
+  } else {
+    S.subscriptions.push(sub);
+    showToast('✓ Suscripción guardada');
+  }
   saveData('subscriptions');
   closeModal('modal-sub');
-  showToast('✓ Suscripción guardada');
   renderSubsScreen(); renderHome();
 };
 
@@ -2139,17 +2203,25 @@ window.saveSub = function() {
 window.saveBill = function() {
   const name = document.getElementById('bill-name').value.trim();
   if (!name) { showToast('⚠️ Ingresa el nombre'); return; }
-  S.bills.push({
-    id: Date.now(), name,
+  const bill = {
+    id: editingBillId || Date.now(),
+    name,
     amount: parseFloat(document.getElementById('bill-amount').value)||0,
     due: document.getElementById('bill-due').value,
     cat: document.getElementById('bill-cat').value,
     recurring: document.getElementById('bill-recurring-toggle').classList.contains('on'),
     paid: false, account: S.account,
-  });
+  };
+  if (editingBillId) {
+    const idx = S.bills.findIndex(b=>b.id===editingBillId);
+    if (idx>=0) S.bills[idx] = { ...S.bills[idx], ...bill };
+    showToast('✓ Recibo actualizado');
+  } else {
+    S.bills.push(bill);
+    showToast('✓ Recibo guardado');
+  }
   saveData('bills');
   closeModal('modal-bill');
-  showToast('✓ Recibo guardado');
   renderBillsTab(); renderHome();
 };
 
@@ -2530,9 +2602,16 @@ function renderSubsScreen() {
     const d=s.day>=now?s.day-now:30-now+s.day;
     return `<div class="sub-item">
       <div class="sub-status ${s.active?(d<=3?'upcoming':'active'):''}"></div>
-      <div class="tx-icon" style="background:var(--bg3);font-size:20px">${s.emoji}</div>
+      <div class="tx-icon" style="background:var(--bg3);font-size:20px;flex-shrink:0">${s.emoji}</div>
       <div class="tx-info"><div class="tx-name">${s.name}</div><div class="tx-meta">${s.freq} · día ${s.day} · ${s.method}</div></div>
-      <div style="text-align:right"><div style="font-size:14px;font-weight:600;color:var(--red)">$${fmt(s.amount)}</div><div style="font-size:10px;color:var(--muted)">en ${d}d</div></div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="font-size:14px;font-weight:600;color:var(--red)">$${fmt(s.amount)}</div>
+        <div style="font-size:10px;color:var(--muted)">en ${d}d</div>
+        <div style="display:flex;gap:4px;margin-top:2px">
+          <button onclick="openSubModal(${s.id})" class="tx-action-btn">✏️</button>
+          <button onclick="deleteSub(${s.id})" class="tx-action-btn">🗑️</button>
+        </div>
+      </div>
     </div>`;
   }).join('') : '<div class="empty-state"><div class="es-icon">🔄</div><div class="es-text">Sin suscripciones</div></div>';
 }
@@ -2546,9 +2625,13 @@ function renderBillsTab() {
     return `<div class="bill-item${days<0?' bill-overdue':''}">
       <div class="bill-days"><div class="bd-num">${Math.abs(days)}</div><div class="bd-lbl">${days<0?'venc.':days===0?'hoy':'días'}</div></div>
       <div class="tx-info"><div class="tx-name">${b.name}</div><div class="tx-meta">${b.cat} · ${b.due}</div></div>
-      <div style="text-align:right">
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <div class="tx-amount neg">$${fmt(b.amount)}</div>
-        <button onclick="markBillPaid(${b.id})" style="font-size:10px;background:rgba(200,242,97,0.12);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:2px 8px;cursor:pointer;margin-top:4px">✓ Pagar</button>
+        <div style="display:flex;gap:4px;margin-top:2px">
+          <button onclick="openBillModal(${b.id})" class="tx-action-btn">✏️</button>
+          <button onclick="deleteBill(${b.id})" class="tx-action-btn">🗑️</button>
+          <button onclick="markBillPaid(${b.id})" style="font-size:10px;background:rgba(200,242,97,0.08);color:var(--accent);border:1px solid rgba(200,242,97,0.3);border-radius:6px;padding:2px 7px;cursor:pointer">✓</button>
+        </div>
       </div>
     </div>`;
   }).join('') : '<div class="empty-state"><div class="es-icon">📄</div><div class="es-text">Sin recibos pendientes</div></div>';
