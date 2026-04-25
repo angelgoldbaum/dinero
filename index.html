@@ -809,7 +809,7 @@ select.form-input { cursor: pointer; }
   <div class="balance-card">
     <div class="balance-label">Balance actual · <span id="bal-account">Personal</span></div>
     <div class="balance-amount">$<span id="bal-amount">0</span></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:4px">MXN</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px" id="bal-currency-label">MXN</div>
     <div class="balance-sub">
       <div class="bsub">
         <div class="bsub-label">Ingresos</div>
@@ -989,6 +989,26 @@ select.form-input { cursor: pointer; }
 <!-- AJUSTES -->
 <div class="screen" id="s-ajustes" style="overflow-x:hidden">
   <div style="margin-top:14px"></div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">Moneda y tipo de cambio</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button id="btn-mxn" onclick="setCurrency('MXN')" style="padding:14px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(200,242,97,0.08);color:var(--accent);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer">
+        🇲🇽 MXN
+      </button>
+      <button id="btn-usd" onclick="setCurrency('USD')" style="padding:14px;border-radius:var(--radius-sm);border:2px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer">
+        🇺🇸 USD
+      </button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo de cambio (1 USD = ? MXN)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input type="number" class="form-input" id="exchange-rate-input" placeholder="17.50" inputmode="decimal" step="0.01" style="flex:1">
+        <button onclick="saveExchangeRate()" style="padding:12px 16px;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius-sm);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">Guardar</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px" id="exchange-rate-display">Tipo de cambio actual: $17.50</div>
+    </div>
+  </div>
 
   <div class="settings-section">
     <div class="settings-section-title">Tema de color</div>
@@ -1574,6 +1594,8 @@ const S = {
   transactions: [], subscriptions: [], bills: [],
   budgets: [], goals: [], wishlist: [], scanHistory: [], cards: [],
   users: { angel: 'Angel', novia: 'Novia' },
+  currency: 'MXN',
+  exchangeRate: 17.5,
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
   typeFilter: 'all', catFilter: 'all',
@@ -2196,12 +2218,18 @@ function renderHome() {
   const creditPaid = mTxs.filter(t=>t.type==='credit-payment').reduce((s,t)=>s+t.amount,0);
   const balance = income - expense - creditPaid;
 
-  document.getElementById('bal-amount').textContent = fmt(Math.abs(balance));
+  const displayBalance = S.currency === 'USD' ? (Math.abs(balance) / (S.exchangeRate||17.5)) : Math.abs(balance);
+  document.getElementById('bal-amount').textContent = fmt(displayBalance);
+  document.getElementById('bal-amount').parentElement.children[0].textContent = getCurrencySymbol();
   document.getElementById('bal-amount').parentElement.style.color = balance<0 ? 'var(--red)' : 'var(--text)';
-  document.getElementById('bal-income').textContent  = '$'+fmt(income);
-  document.getElementById('bal-expense').textContent = '$'+fmt(expense + creditPaid);
+  document.getElementById('bal-income').textContent  = fmtCurrency(income);
+  document.getElementById('bal-expense').textContent = fmtCurrency(expense + creditPaid);
   document.getElementById('bal-month').textContent   = monthName(month).slice(0,3)+' '+year;
   document.getElementById('bal-account').textContent = acc==='personal' ? 'Personal' : 'Barbería';
+  const currLabel = document.getElementById('bal-currency-label');
+  if (currLabel) currLabel.textContent = S.currency === 'USD'
+    ? `USD · TC: $${(S.exchangeRate||17.5).toFixed(2)}`
+    : 'MXN';
 
   // Mini bar chart
   const chart = document.getElementById('mini-chart');
@@ -2241,7 +2269,10 @@ function renderHome() {
   }
 
   // Recent txs (exclude transfers from home list unless they're the only thing)
-  const recent = txs.filter(t=>t.type!=='transfer').slice(0,5);
+  const recent = txs
+    .filter(t => t.type !== 'transfer')
+    .sort((a,b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
   const list = document.getElementById('home-tx-list');
   list.innerHTML = recent.length ? recent.map(txItemHtml).join('') :
     '<div class="empty-state"><div class="es-icon">💸</div><div class="es-text">Sin transacciones. ¡Empieza registrando!</div></div>';
@@ -2321,7 +2352,8 @@ function renderGastosScreen() {
 
   // Tx list
   const list=document.getElementById('gastos-tx-list');
-  list.innerHTML = txs.length ? txs.map(txItemHtml).join('') :
+  const sortedTxs = [...txs].sort((a,b) => b.date.localeCompare(a.date));
+  list.innerHTML = sortedTxs.length ? sortedTxs.map(txItemHtml).join('') :
     '<div class="empty-state"><div class="es-icon">📊</div><div class="es-text">Sin movimientos</div></div>';
 }
 
@@ -2603,6 +2635,7 @@ window.renderCardsScreen = function() {
     </div>`).join('') : '<div class="empty-state" style="padding:20px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrega tu primera.</div></div>';
   renderCatsSettings();
   renderThemeGrid();
+  renderCurrencySettings();
 };
 
 window.editUserName = function(who) {
@@ -2862,10 +2895,12 @@ function getDebitCards() {
 
 // Calculate pending balance for a credit card
 function getCreditBalance(cardId) {
+  const card = (S.cards || []).find(c => c.id === cardId);
+  const initialBalance = card ? (card.balance || 0) : 0; // saldo inicial registrado
   const txs = S.transactions.filter(t => t.account === S.account);
   const charges  = txs.filter(t => t.type === 'expense' && String(t.method) === String(cardId)).reduce((s,t) => s + t.amount, 0);
   const payments = txs.filter(t => t.type === 'credit-payment' && String(t.creditCardId) === String(cardId)).reduce((s,t) => s + t.amount, 0);
-  return Math.max(0, charges - payments);
+  return Math.max(0, initialBalance + charges - payments);
 }
 
 // Called when saving a tx — check if method is credit and flag it
@@ -3095,6 +3130,72 @@ function renderCreditScreen() {
   }
 }
 
+// ── CURRENCY ──
+function getCurrencySymbol() { return S.currency === 'USD' ? 'US$' : '$'; }
+
+function fmtCurrency(amountMXN) {
+  if (S.currency === 'USD') {
+    const rate = S.exchangeRate || 17.5;
+    return 'US$' + fmt(amountMXN / rate);
+  }
+  return '$' + fmt(amountMXN);
+}
+
+window.setCurrency = function(cur) {
+  S.currency = cur;
+  lsSet('currency', cur);
+  // Update buttons
+  const mxnBtn = document.getElementById('btn-mxn');
+  const usdBtn = document.getElementById('btn-usd');
+  if (mxnBtn && usdBtn) {
+    mxnBtn.style.border    = cur==='MXN' ? '2px solid var(--accent)' : '2px solid var(--border2)';
+    mxnBtn.style.background = cur==='MXN' ? 'rgba(200,242,97,0.08)' : 'transparent';
+    mxnBtn.style.color     = cur==='MXN' ? 'var(--accent)' : 'var(--muted)';
+    usdBtn.style.border    = cur==='USD' ? '2px solid var(--blue)' : '2px solid var(--border2)';
+    usdBtn.style.background = cur==='USD' ? 'rgba(92,155,255,0.08)' : 'transparent';
+    usdBtn.style.color     = cur==='USD' ? 'var(--blue)' : 'var(--muted)';
+  }
+  renderAll();
+};
+
+window.saveExchangeRate = function() {
+  const rate = parseFloat(document.getElementById('exchange-rate-input').value);
+  if (!rate || rate <= 0) { showToast('⚠️ Ingresa un tipo de cambio válido'); return; }
+  S.exchangeRate = rate;
+  lsSet('exchangeRate', rate);
+  document.getElementById('exchange-rate-display').textContent = `Tipo de cambio actual: 1 USD = $${rate.toFixed(2)} MXN`;
+  showToast('✓ Tipo de cambio actualizado');
+  renderAll();
+};
+
+function loadCurrencySettings() {
+  const cur  = lsGet('currency');
+  const rate = lsGet('exchangeRate');
+  if (cur)  S.currency = cur;
+  if (rate) S.exchangeRate = rate;
+}
+
+function renderCurrencySettings() {
+  const cur  = S.currency;
+  const rate = S.exchangeRate || 17.5;
+  const mxnBtn = document.getElementById('btn-mxn');
+  const usdBtn = document.getElementById('btn-usd');
+  const rateInput   = document.getElementById('exchange-rate-input');
+  const rateDisplay = document.getElementById('exchange-rate-display');
+  if (mxnBtn) {
+    mxnBtn.style.border     = cur==='MXN' ? '2px solid var(--accent)' : '2px solid var(--border2)';
+    mxnBtn.style.background = cur==='MXN' ? 'rgba(200,242,97,0.08)' : 'transparent';
+    mxnBtn.style.color      = cur==='MXN' ? 'var(--accent)' : 'var(--muted)';
+  }
+  if (usdBtn) {
+    usdBtn.style.border     = cur==='USD' ? '2px solid var(--blue)' : '2px solid var(--border2)';
+    usdBtn.style.background = cur==='USD' ? 'rgba(92,155,255,0.08)' : 'transparent';
+    usdBtn.style.color      = cur==='USD' ? 'var(--blue)' : 'var(--muted)';
+  }
+  if (rateInput)   rateInput.value = rate;
+  if (rateDisplay) rateDisplay.textContent = `Tipo de cambio actual: 1 USD = $${rate.toFixed(2)} MXN`;
+}
+
 // ── THEME MANAGEMENT ──
 const THEMES = [
   {
@@ -3180,6 +3281,7 @@ async function init() {
     // Restore saved theme immediately
     const savedTheme = lsGet('theme') || 'oscuro';
     applyTheme(savedTheme);
+    loadCurrencySettings();
     loadCustomCategories();
     S.currentMonth = new Date().getMonth();
     S.currentYear  = new Date().getFullYear();
