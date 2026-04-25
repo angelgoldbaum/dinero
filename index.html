@@ -2230,12 +2230,17 @@ function txItemHtml(t) {
       </div>
     </div>`;
   }
+  const isExpenseLike = t.type === 'expense' || t.type === 'credit-payment';
   const cat  = getCat(t.category);
-  const sign = t.type==='expense' ? '-' : '+';
-  const cls  = t.type==='expense' ? 'neg' : 'pos';
+  const sign = isExpenseLike ? '-' : '+';
+  const cls  = isExpenseLike ? 'neg' : 'pos';
   const who  = t.who==='angel'  ? '<span class="user-badge angel">A</span>'
              : t.who==='novia'  ? '<span class="user-badge novia">N</span>'
              : '<span class="user-badge angel">A</span><span class="user-badge novia">N</span>';
+  // Credit payment badge
+  const creditBadge = t.type === 'credit-payment'
+    ? ` · <span style="color:var(--red);font-size:10px;font-weight:600">💳 ${t.creditCardName||'Crédito'}</span>`
+    : '';
   // Show original currency if USD, with MXN equivalent below
   const amountDisplay = t.currency === 'USD'
     ? `${sign}US$${fmt(t.amountOrig || t.amount)}`
@@ -2247,7 +2252,7 @@ function txItemHtml(t) {
     <div class="tx-icon" style="background:${cat.color}22;flex-shrink:0">${cat.emoji}</div>
     <div class="tx-info">
       <div class="tx-name">${t.desc}</div>
-      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable?' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾</span>':''}</div>
+      <div class="tx-meta">${t.date} · ${who} · ${getMethodDisplay(t.method).emoji} ${getMethodDisplay(t.method).name}${t.facturable?' · <span style="color:var(--blue);font-size:10px;font-weight:600">🧾</span>':''}${creditBadge}</div>
     </div>
     <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
       <div class="tx-amount ${cls}" style="${t.currency==='USD'?'color:var(--blue)':''}">${amountDisplay}</div>
