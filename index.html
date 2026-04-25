@@ -1017,6 +1017,17 @@ select.form-input { cursor: pointer; }
   <div style="margin-top:14px"></div>
 
   <div class="settings-section">
+    <div class="settings-section-title">Sincronización</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      Sube todos tus datos locales a la nube para compartirlos con Vianey.
+    </div>
+    <button onclick="forceSyncToCloud()" style="width:100%;padding:13px;background:transparent;border:1.5px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer">
+      ☁️ Forzar sincronización
+    </button>
+    <div id="sync-status" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px"></div>
+  </div>
+
+  <div class="settings-section">
     <div class="settings-section-title">Moneda y tipo de cambio</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
       <button id="btn-mxn" onclick="setCurrency('MXN')" style="padding:14px;border-radius:var(--radius-sm);border:2px solid var(--accent);background:rgba(200,242,97,0.08);color:var(--accent);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer">
@@ -1733,19 +1744,39 @@ function saveData(key) {
 // ── LOAD DATA ──
 async function loadAll() {
   const keys = ['transactions','subscriptions','bills','budgets','goals','wishlist','scanHistory','cards'];
+  // 1. Load from localStorage first (always fast)
   for (const k of keys) { const v = lsGet(k); if (v) S[k] = v; }
   const u = lsGet('users'); if (u) S.users = u;
+
   if (useCloud && db) {
     try {
       await Promise.race([
         (async () => {
           for (const k of keys) {
-            try { const v = await cloudLoad(k); if (v && v.length > 0) { S[k] = v; lsSet(k, v); } } catch {}
+            try {
+              const cloudData = await cloudLoad(k);
+              if (cloudData && cloudData.length > 0) {
+                // Cloud has data — use it (merge: cloud wins for existing, keep local extras)
+                const cloudIds = new Set(cloudData.map(d => String(d.id)));
+                const localOnly = (S[k] || []).filter(d => !cloudIds.has(String(d.id)));
+                S[k] = [...cloudData, ...localOnly];
+                lsSet(k, S[k]);
+                // Push any local-only items up to cloud
+                if (localOnly.length > 0) {
+                  localOnly.forEach(item => cloudSave(k, String(item.id), item));
+                }
+              } else if (S[k] && S[k].length > 0) {
+                // Cloud is empty but we have local data — push everything up
+                S[k].forEach(item => cloudSave(k, String(item.id), item));
+              }
+            } catch(e) { console.warn('sync error for', k, e); }
           }
+          // Sync users too
+          if (S.users) cloudSave('users', 'users', S.users);
         })(),
-        new Promise((_, rej) => setTimeout(() => rej('timeout'), 5000))
+        new Promise((_, rej) => setTimeout(() => rej('timeout'), 8000))
       ]);
-    } catch {}
+    } catch(e) { console.warn('Cloud sync skipped:', e); }
   }
 }
 
@@ -3391,6 +3422,36 @@ function renderCurrencySettings() {
   if (rateInput)   rateInput.value = rate;
   if (rateDisplay) rateDisplay.textContent = `Tipo de cambio actual: 1 USD = $${rate.toFixed(2)} MXN`;
 }
+
+// ── FORCE SYNC ──
+window.forceSyncToCloud = async function() {
+  const statusEl = document.getElementById('sync-status');
+  if (!useCloud || !db) {
+    if (statusEl) statusEl.textContent = '⚠️ Firebase no está configurado';
+    showToast('⚠️ Firebase no configurado');
+    return;
+  }
+  if (statusEl) statusEl.textContent = '⏳ Subiendo datos...';
+  const keys = ['transactions','subscriptions','bills','budgets','goals','wishlist','scanHistory','cards'];
+  let total = 0;
+  try {
+    for (const k of keys) {
+      if (S[k] && S[k].length > 0) {
+        for (const item of S[k]) {
+          await cloudSave(k, String(item.id), item);
+          total++;
+        }
+      }
+    }
+    await cloudSave('users', 'users', S.users);
+    if (statusEl) statusEl.textContent = `✓ ${total} registros sincronizados`;
+    showToast(`✓ ${total} registros subidos a la nube`);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = '⚠️ Error al sincronizar';
+    showToast('⚠️ Error al sincronizar');
+    console.error(e);
+  }
+};
 
 // ── THEME MANAGEMENT ──
 const THEMES = [
