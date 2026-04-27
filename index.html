@@ -835,8 +835,8 @@ select.form-input { cursor: pointer; }
     <div style="display:flex;align-items:center;gap:10px">
       <div class="sync-dot" title="Sincronizado"></div>
       <div class="account-pills">
-        <button class="apill active" onclick="setAccount('personal')">Personal</button>
-        <button class="apill" onclick="setAccount('barberia')">Barbería</button>
+        <button class="apill active" onclick="setAccount('personal', this)">Personal</button>
+        <button class="apill" onclick="setAccount('barberia', this)">Barbería</button>
       </div>
     </div>
   </div>
@@ -1784,22 +1784,22 @@ window.CATEGORIES        = [...DEFAULT_CATEGORIES.personal];
 window.INCOME_CATEGORIES = [...DEFAULT_INCOME_CATEGORIES.personal];
 
 window.METHODS = [
-  { id:'bbva-deb',     label:'BBVA Déb.',   emoji:'💳', type:'débito'    },
-  { id:'bbva-cred',    label:'BBVA Créd.',  emoji:'🟠', type:'crédito'   },
-  { id:'nu',           label:'Nu',          emoji:'🟣', type:'débito'    },
-  { id:'efectivo',     label:'Efectivo',    emoji:'💵', type:'efectivo'  },
-  { id:'transferencia',label:'Transfer.',   emoji:'📲', type:'digital'   },
-  { id:'paypal',       label:'PayPal',      emoji:'🔵', type:'digital'   },
+  { id:'bbva-deb',     label:'BBVA Déb.',   emoji:'💳', type:'débito',    account:'personal' },
+  { id:'bbva-cred',    label:'BBVA Créd.',  emoji:'🟠', type:'crédito',   account:'personal' },
+  { id:'nu',           label:'Nu',          emoji:'🟣', type:'débito',    account:'personal' },
+  { id:'efectivo',     label:'Efectivo',    emoji:'💵', type:'efectivo',  account:'personal' },
+  { id:'transferencia',label:'Transfer.',   emoji:'📲', type:'digital',   account:'personal' },
+  { id:'paypal',       label:'PayPal',      emoji:'🔵', type:'digital',   account:'personal' },
 ];
 
 function getMethods() {
-  const cards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
-  // Filter by current account — cards without account default to personal
-  return cards.filter(c => (c.account || 'personal') === S.account);
+  if (!S.cards || S.cards.length === 0) return METHODS.filter(m => m.account === S.account);
+  const accountCards = S.cards.filter(c => (c.account || 'personal') === S.account);
+  // If no cards configured for this account, show a helpful empty state (not fallback)
+  return accountCards;
 }
 
 function getAllMethods() {
-  // Used when we need all cards regardless of account (e.g. transfers, credit payments)
   return S.cards && S.cards.length > 0 ? S.cards : METHODS;
 }
 function getMethodDisplay(methodId) {
@@ -1914,11 +1914,16 @@ window.showScreen = function(id) {
   if (id==='s-creditos') renderCreditScreen();
 };
 
-window.setAccount = function(acc) {
+window.setAccount = function(acc, btn) {
   S.account = acc;
-  document.querySelectorAll('.apill').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('bal-account').textContent = acc==='personal' ? 'Personal' : 'Barbería';
+  document.querySelectorAll('.apill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('bal-account').textContent = acc === 'personal' ? 'Personal' : 'Barbería';
+  // Reset account-dependent state
+  saldosExpanded = false;
+  selectedMethod = ''; // will be re-resolved on next modal open
+  selectedIncomeCat = 'sueldo';
+  selectedCat = 'otro';
   loadCategoriesForAccount(acc);
   renderAll();
 };
@@ -2051,8 +2056,10 @@ window.openTxModal = function(txId) {
   document.querySelector('#modal-tx .submit-btn').textContent   = 'Guardar';
 
   const methods = getMethods();
-  if (methods.length > 0 && !methods.find(m=>String(m.id)===String(selectedMethod)))
+  // Always resolve to a valid method for the current account
+  if (methods.length > 0 && !methods.find(m => String(m.id) === String(selectedMethod))) {
     selectedMethod = String(methods[0].id);
+  }
 
   if (txId) {
     // Edit mode
@@ -3221,8 +3228,10 @@ function getDebitCards() {
 // Calculate pending balance for a credit card
 function getCreditBalance(cardId) {
   const card = (S.cards || []).find(c => c.id === cardId);
-  const initialBalance = card ? (card.balance || 0) : 0; // saldo inicial registrado
-  const txs = S.transactions.filter(t => t.account === S.account);
+  const initialBalance = card ? (card.balance || 0) : 0;
+  const cardAcc = card ? (card.account || 'personal') : S.account;
+  // Filter by the card's own account, not the currently active view
+  const txs = S.transactions.filter(t => t.account === cardAcc);
   const charges  = txs.filter(t => t.type === 'expense' && String(t.method) === String(cardId)).reduce((s,t) => s + t.amount, 0);
   const payments = txs.filter(t => t.type === 'credit-payment' && String(t.creditCardId) === String(cardId)).reduce((s,t) => s + t.amount, 0);
   return Math.max(0, initialBalance + charges - payments);
@@ -3563,7 +3572,7 @@ window.openCardDetail = function(cardId) {
   if (!card) return;
 
   const acc = card.account || 'personal';
-  const balance = getCardBalance(cardId, acc);
+  const balance = getCardBalance(cardId);
   const isPositive = balance >= 0;
 
   // Header
@@ -3664,34 +3673,27 @@ window.toggleSaldos = function() {
   renderSaldos();
 };
 
-function getCardBalance(cardId, account) {
+function getCardBalance(cardId) {
   const card = (S.cards || []).find(c => c.id === cardId);
   const initial = card ? (card.balance || 0) : 0;
-  const txs = S.transactions.filter(t => t.account === account);
+  // Don't filter by account — a card's balance is determined by all its transactions
+  const txs = S.transactions;
+  const str = String(cardId);
 
-  // Income credited to this card
   const income = txs
-    .filter(t => t.type === 'income' && String(t.method) === String(cardId))
+    .filter(t => t.type === 'income' && String(t.method) === str)
     .reduce((s,t) => s + t.amount, 0);
-
-  // Expenses paid with this card (debit/cash only, not credit)
   const expense = txs
-    .filter(t => t.type === 'expense' && String(t.method) === String(cardId) && !isCreditCard(t.method))
+    .filter(t => t.type === 'expense' && String(t.method) === str && !isCreditCard(t.method))
     .reduce((s,t) => s + t.amount, 0);
-
-  // Credit payments made FROM this card (debit paying credit)
   const creditPayments = txs
-    .filter(t => t.type === 'credit-payment' && String(t.method) === String(cardId))
+    .filter(t => t.type === 'credit-payment' && String(t.method) === str)
     .reduce((s,t) => s + t.amount, 0);
-
-  // Transfers in (this card is destination)
   const transferIn = txs
-    .filter(t => t.type === 'transfer' && String(t.toCard) === String(cardId))
+    .filter(t => t.type === 'transfer' && String(t.toCard) === str)
     .reduce((s,t) => s + t.amount, 0);
-
-  // Transfers out (this card is origin)
   const transferOut = txs
-    .filter(t => t.type === 'transfer' && String(t.fromCard) === String(cardId))
+    .filter(t => t.type === 'transfer' && String(t.fromCard) === str)
     .reduce((s,t) => s + t.amount, 0);
 
   return initial + income - expense - creditPayments + transferIn - transferOut;
@@ -3721,7 +3723,7 @@ function renderSaldos() {
   let totalMXN = 0;
 
   for (const card of visibleCards) {
-    const bal = getCardBalance(card.id, acc);
+    const bal = getCardBalance(card.id);
     totalMXN += bal;
     const isPositive = bal >= 0;
     const color = isPositive ? 'var(--accent)' : 'var(--red)';
