@@ -898,7 +898,7 @@ select.form-input { cursor: pointer; }
   <!-- Saldos por tarjeta -->
   <div class="sec-header">
     <div class="sec-title">Saldos por cuenta</div>
-    <div class="sec-link" onclick="toggleSaldos()">Ver todo</div>
+    <div id="saldos-toggle-link" class="sec-link" onclick="toggleSaldos()" style="display:none">Ver todo</div>
   </div>
   <div id="home-saldos-list"></div>
 
@@ -3673,6 +3673,69 @@ window.toggleSaldos = function() {
   renderSaldos();
 };
 
+function renderSaldos() {
+  const list       = document.getElementById('home-saldos-list');
+  const toggleLink = document.getElementById('saldos-toggle-link');
+  if (!list) return;
+
+  // Always read S.account at render time — never cache it
+  const acc = S.account;
+
+  const accountCards = (S.cards || []).filter(c =>
+    ['débito','efectivo','transferencia'].includes(c.type) &&
+    (c.account || 'personal') === acc
+  );
+
+  if (accountCards.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Sin cuentas para este centro. Agrégalas en Ajustes.</div></div>';
+    if (toggleLink) toggleLink.style.display = 'none';
+    return;
+  }
+
+  const MAX = 3;
+  const hasMore     = accountCards.length > MAX;
+  const visibleCards = saldosExpanded ? accountCards : accountCards.slice(0, MAX);
+
+  // Update toggle link via stable ID — no fragile attribute selectors
+  if (toggleLink) {
+    toggleLink.style.display = hasMore ? '' : 'none';
+    toggleLink.textContent   = saldosExpanded ? 'Ver menos' : 'Ver todo';
+  }
+
+  let totalMXN = 0;
+  let html = '';
+
+  for (const card of visibleCards) {
+    const bal = getCardBalance(card.id);
+    totalMXN += bal;
+    const pos   = bal >= 0;
+    const color = pos ? 'var(--accent)' : 'var(--red)';
+    html += `<div class="saldo-card" onclick="openCardDetail(${card.id})" style="cursor:pointer">
+      <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
+      <div class="sc-info">
+        <div class="sc-name">${card.name}</div>
+        <div class="sc-type">${card.type}</div>
+      </div>
+      <div class="sc-amount">
+        <div class="sc-amount-val" style="color:${color}">${pos?'':'-'}$${fmt(Math.abs(bal))}</div>
+        <div class="sc-amount-sub">MXN · detalle →</div>
+      </div>
+    </div>`;
+  }
+
+  if (accountCards.length > 1) {
+    const pos = totalMXN >= 0;
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-top:2px;box-sizing:border-box">
+      <span style="font-size:12px;color:var(--muted);font-weight:500">Total disponible</span>
+      <span style="font-size:14px;font-weight:700;color:${pos?'var(--accent)':'var(--red)'}">
+        ${pos?'':'-'}$${fmt(Math.abs(totalMXN))} MXN
+      </span>
+    </div>`;
+  }
+
+  list.innerHTML = html;
+}
+
 function getCardBalance(cardId) {
   const card = (S.cards || []).find(c => c.id === cardId);
   const initial = card ? (card.balance || 0) : 0;
@@ -3697,68 +3760,6 @@ function getCardBalance(cardId) {
     .reduce((s,t) => s + t.amount, 0);
 
   return initial + income - expense - creditPayments + transferIn - transferOut;
-}
-
-function renderSaldos() {
-  const list = document.getElementById('home-saldos-list');
-  if (!list) return;
-
-  const acc = S.account;
-  // Only show cards of the active account
-  const accountCards = (S.cards || []).filter(c =>
-    ['débito','efectivo','transferencia'].includes(c.type) &&
-    (c.account || 'personal') === acc
-  );
-
-  if (accountCards.length === 0) {
-    list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Agrega tarjetas en Ajustes</div></div>';
-    return;
-  }
-
-  // Collapsed: show first 3 cards; expanded: show all
-  const visibleCards = saldosExpanded ? accountCards : accountCards.slice(0, 3);
-  const hasMore = accountCards.length > 3;
-
-  let html = '';
-  let totalMXN = 0;
-
-  for (const card of visibleCards) {
-    const bal = getCardBalance(card.id);
-    totalMXN += bal;
-    const isPositive = bal >= 0;
-    const color = isPositive ? 'var(--accent)' : 'var(--red)';
-
-    html += `<div class="saldo-card" onclick="openCardDetail(${card.id})" style="cursor:pointer">
-      <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
-      <div class="sc-info">
-        <div class="sc-name">${card.name}</div>
-        <div class="sc-type">${card.type}</div>
-      </div>
-      <div class="sc-amount">
-        <div class="sc-amount-val" style="color:${color}">${isPositive?'':'-'}$${fmt(Math.abs(bal))}</div>
-        <div class="sc-amount-sub">MXN · ver detalle →</div>
-      </div>
-    </div>`;
-  }
-
-  // Total row
-  if (accountCards.length > 1) {
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-top:2px">
-      <span style="font-size:12px;color:var(--muted);font-weight:500">Total disponible</span>
-      <span style="font-size:14px;font-weight:700;color:${totalMXN>=0?'var(--accent)':'var(--red)'}">
-        ${totalMXN>=0?'':'-'}$${fmt(Math.abs(totalMXN))} MXN
-      </span>
-    </div>`;
-  }
-
-  list.innerHTML = html;
-
-  // Update "Ver todo" link
-  const link = document.querySelector('#s-home .sec-link[onclick="toggleSaldos()"]');
-  if (link) {
-    if (!hasMore) link.style.display = 'none';
-    else { link.style.display = ''; link.textContent = saldosExpanded ? 'Ver menos' : 'Ver todo'; }
-  }
 }
 
 // ── FORCE SYNC ──
