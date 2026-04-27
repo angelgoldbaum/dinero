@@ -3678,25 +3678,43 @@ function renderSaldos() {
   const toggleLink = document.getElementById('saldos-toggle-link');
   if (!list) return;
 
-  // Always read S.account at render time — never cache it
   const acc = S.account;
-
-  const accountCards = (S.cards || []).filter(c =>
-    ['débito','efectivo','transferencia'].includes(c.type) &&
-    (c.account || 'personal') === acc
+  const allDebitCards = (S.cards || []).filter(c =>
+    ['débito','efectivo','transferencia'].includes(c.type)
   );
 
-  if (accountCards.length === 0) {
-    list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Sin cuentas para este centro. Agrégalas en Ajustes.</div></div>';
+  // Cards properly assigned to current account
+  const assignedCards = allDebitCards.filter(c => c.account === acc);
+  // Cards with no account assigned yet (legacy)
+  const unassignedCards = allDebitCards.filter(c => !c.account);
+
+  // Show assigned cards, fallback to unassigned if none assigned
+  const accountCards = assignedCards.length > 0
+    ? assignedCards
+    : unassignedCards;
+
+  if (accountCards.length === 0 && allDebitCards.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Sin cuentas. Agrégalas en Ajustes.</div></div>';
     if (toggleLink) toggleLink.style.display = 'none';
     return;
   }
 
+  if (accountCards.length === 0) {
+    list.innerHTML = `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--muted);text-align:center">
+      Sin tarjetas asignadas a este centro.<br>
+      <span onclick="showScreen('s-ajustes')" style="color:var(--accent);cursor:pointer;font-weight:600">Asignar en Ajustes →</span>
+    </div>`;
+    if (toggleLink) toggleLink.style.display = 'none';
+    return;
+  }
+
+  // Show notice if using unassigned fallback
+  const showFallbackNotice = assignedCards.length === 0 && unassignedCards.length > 0;
+
   const MAX = 3;
-  const hasMore     = accountCards.length > MAX;
+  const hasMore      = accountCards.length > MAX;
   const visibleCards = saldosExpanded ? accountCards : accountCards.slice(0, MAX);
 
-  // Update toggle link via stable ID — no fragile attribute selectors
   if (toggleLink) {
     toggleLink.style.display = hasMore ? '' : 'none';
     toggleLink.textContent   = saldosExpanded ? 'Ver menos' : 'Ver todo';
@@ -3704,6 +3722,12 @@ function renderSaldos() {
 
   let totalMXN = 0;
   let html = '';
+
+  if (showFallbackNotice) {
+    html += `<div style="background:rgba(255,152,64,0.08);border:1px solid rgba(255,152,64,0.2);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:8px;font-size:11px;color:var(--orange)">
+      ⚠️ Tus tarjetas no tienen centro asignado. <span onclick="showScreen('s-ajustes')" style="text-decoration:underline;cursor:pointer">Asignar en Ajustes</span>
+    </div>`;
+  }
 
   for (const card of visibleCards) {
     const bal = getCardBalance(card.id);
