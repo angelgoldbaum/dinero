@@ -3679,41 +3679,26 @@ function renderSaldos() {
   if (!list) return;
 
   const acc = S.account;
-  const allDebitCards = (S.cards || []).filter(c =>
-    ['débito','efectivo','transferencia'].includes(c.type)
-  );
 
-  // Cards properly assigned to current account
-  const assignedCards = allDebitCards.filter(c => c.account === acc);
-  // Cards with no account assigned yet (legacy)
-  const unassignedCards = allDebitCards.filter(c => !c.account);
+  // Get ALL non-credit cards — no strict type filter that could miss cards
+  const allCards = (S.cards || []).filter(c => c.type !== 'crédito');
 
-  // Show assigned cards, fallback to unassigned if none assigned
-  const accountCards = assignedCards.length > 0
-    ? assignedCards
-    : unassignedCards;
-
-  if (accountCards.length === 0 && allDebitCards.length === 0) {
-    list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Sin cuentas. Agrégalas en Ajustes.</div></div>';
+  if (allCards.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrégalas en Ajustes.</div></div>';
     if (toggleLink) toggleLink.style.display = 'none';
     return;
   }
 
-  if (accountCards.length === 0) {
-    list.innerHTML = `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--muted);text-align:center">
-      Sin tarjetas asignadas a este centro.<br>
-      <span onclick="showScreen('s-ajustes')" style="color:var(--accent);cursor:pointer;font-weight:600">Asignar en Ajustes →</span>
-    </div>`;
-    if (toggleLink) toggleLink.style.display = 'none';
-    return;
-  }
+  // Prefer cards assigned to current account; fall back to all
+  const accountCards = allCards.filter(c => c.account === acc);
+  const visiblePool  = accountCards.length > 0 ? accountCards : allCards;
 
-  // Show notice if using unassigned fallback
-  const showFallbackNotice = assignedCards.length === 0 && unassignedCards.length > 0;
+  // Show notice if falling back
+  const isFallback = accountCards.length === 0 && allCards.length > 0;
 
-  const MAX = 3;
-  const hasMore      = accountCards.length > MAX;
-  const visibleCards = saldosExpanded ? accountCards : accountCards.slice(0, MAX);
+  const MAX          = 3;
+  const hasMore      = visiblePool.length > MAX;
+  const visibleCards = saldosExpanded ? visiblePool : visiblePool.slice(0, MAX);
 
   if (toggleLink) {
     toggleLink.style.display = hasMore ? '' : 'none';
@@ -3723,9 +3708,9 @@ function renderSaldos() {
   let totalMXN = 0;
   let html = '';
 
-  if (showFallbackNotice) {
+  if (isFallback) {
     html += `<div style="background:rgba(255,152,64,0.08);border:1px solid rgba(255,152,64,0.2);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:8px;font-size:11px;color:var(--orange)">
-      ⚠️ Tus tarjetas no tienen centro asignado. <span onclick="showScreen('s-ajustes')" style="text-decoration:underline;cursor:pointer">Asignar en Ajustes</span>
+      ⚠️ Asigna el centro de costos a tus tarjetas en <span onclick="showScreen('s-ajustes')" style="text-decoration:underline;cursor:pointer;font-weight:600">Ajustes</span>
     </div>`;
   }
 
@@ -3738,7 +3723,7 @@ function renderSaldos() {
       <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
       <div class="sc-info">
         <div class="sc-name">${card.name}</div>
-        <div class="sc-type">${card.type}</div>
+        <div class="sc-type">${card.type}${card.account ? ' · '+(card.account==='personal'?'🏠':'✂️') : ''}</div>
       </div>
       <div class="sc-amount">
         <div class="sc-amount-val" style="color:${color}">${pos?'':'-'}$${fmt(Math.abs(bal))}</div>
@@ -3747,7 +3732,7 @@ function renderSaldos() {
     </div>`;
   }
 
-  if (accountCards.length > 1) {
+  if (visiblePool.length > 1) {
     const pos = totalMXN >= 0;
     html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-top:2px;box-sizing:border-box">
       <span style="font-size:12px;color:var(--muted);font-weight:500">Total disponible</span>
