@@ -1534,7 +1534,15 @@ select.form-input { cursor: pointer; }
         <label class="form-label">Límite de crédito (opcional)</label>
         <input type="number" class="form-input" id="card-credit-limit" placeholder="0.00" inputmode="decimal">
       </div>
+      <div class="form-group">
+        <label class="form-label">Centro de costos</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button id="card-acc-personal" onclick="setCardAccount('personal')" style="padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);background:rgba(200,242,97,0.08);color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer">🏠 Personal</button>
+          <button id="card-acc-barberia" onclick="setCardAccount('barberia')" style="padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer">✂️ Barbería</button>
+        </div>
+      </div>
       <input type="hidden" id="card-editing-id">
+      <input type="hidden" id="card-account-value" value="personal">
       <button class="submit-btn" onclick="saveCard()">Guardar</button>
       <button onclick="closeModal('modal-card')" style="width:100%;margin-top:8px;margin-bottom:4px;padding:12px;background:transparent;border:none;color:var(--muted);font-family:var(--sans);font-size:14px;cursor:pointer">Cancelar</button>
     </div>
@@ -1743,10 +1751,18 @@ window.METHODS = [
 ];
 
 function getMethods() {
-  return (S.cards && S.cards.length > 0) ? S.cards : METHODS;
+  const cards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
+  // Filter by current account — cards without account default to personal
+  return cards.filter(c => (c.account || 'personal') === S.account);
+}
+
+function getAllMethods() {
+  // Used when we need all cards regardless of account (e.g. transfers, credit payments)
+  return S.cards && S.cards.length > 0 ? S.cards : METHODS;
 }
 function getMethodDisplay(methodId) {
-  const m = getMethods().find(m => String(m.id) === String(methodId));
+  const allCards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
+  const m = allCards.find(m => String(m.id) === String(methodId));
   return m ? { emoji: m.emoji, name: m.label || m.name } : { emoji: '💳', name: methodId };
 }
 
@@ -1924,8 +1940,12 @@ window.setTxType = function(t) {
 };
 
 function buildTransferSelects() {
-  const valid = getMethods().filter(c=>['débito','efectivo'].includes(c.type));
-  const opts = valid.map(c=>`<option value="${c.id}">${c.emoji} ${c.name||c.label}</option>`).join('');
+  const allCards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
+  const valid = allCards.filter(c=>['débito','efectivo'].includes(c.type));
+  const opts = valid.map(c=>{
+    const accLabel = (c.account||'personal')==='personal' ? '🏠' : '✂️';
+    return `<option value="${c.id}">${c.emoji} ${c.name||c.label} ${accLabel}</option>`;
+  }).join('');
   document.getElementById('tx-from-card').innerHTML = '<option value="">— Origen —</option>'+opts;
   document.getElementById('tx-to-card').innerHTML   = '<option value="">— Destino —</option>'+opts;
 }
@@ -2788,6 +2808,7 @@ window.openCardModal = function(editId) {
     document.getElementById('card-emoji').value=card.emoji||'💳';
     document.getElementById('card-credit-limit').value = card.creditLimit || '';
     document.getElementById('card-limit-group').style.display = card.type === 'crédito' ? 'block' : 'none';
+    setCardAccount(card.account || 'personal');
     document.getElementById('card-editing-id').value=editId;
     selectedCardColor=card.color||'#1e3a5f';
   } else {
@@ -2798,11 +2819,25 @@ window.openCardModal = function(editId) {
     document.getElementById('card-balance').value='';
     document.getElementById('card-credit-limit').value='';
     document.getElementById('card-limit-group').style.display='none';
+    setCardAccount(S.account); // default to current account
     document.getElementById('card-editing-id').value='';
     selectedCardColor='#1e3a5f';
   }
   document.querySelectorAll('#card-color-picker .color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===selectedCardColor));
   openModal('modal-card');
+};
+
+window.setCardAccount = function(acc) {
+  document.getElementById('card-account-value').value = acc;
+  const pb = document.getElementById('card-acc-personal');
+  const bb = document.getElementById('card-acc-barberia');
+  if (acc === 'personal') {
+    pb.style.border = '1.5px solid var(--accent)'; pb.style.background = 'rgba(200,242,97,0.08)'; pb.style.color = 'var(--accent)';
+    bb.style.border = '1.5px solid var(--border2)'; bb.style.background = 'transparent'; bb.style.color = 'var(--muted)';
+  } else {
+    bb.style.border = '1.5px solid var(--orange)'; bb.style.background = 'rgba(255,152,64,0.08)'; bb.style.color = 'var(--orange)';
+    pb.style.border = '1.5px solid var(--border2)'; pb.style.background = 'transparent'; pb.style.color = 'var(--muted)';
+  }
 };
 
 window.selectCardColor = function(el) {
@@ -2824,6 +2859,7 @@ window.saveCard = function() {
     color:selectedCardColor,
     balance:parseFloat(document.getElementById('card-balance').value)||0,
     creditLimit: cardType==='crédito' ? (parseFloat(document.getElementById('card-credit-limit').value)||0) : 0,
+    account: document.getElementById('card-account-value').value || 'personal',
   };
   if(editingId){const idx=S.cards.findIndex(c=>c.id===parseInt(editingId));if(idx>=0)S.cards[idx]=card;}
   else S.cards.push(card);
@@ -2855,14 +2891,29 @@ window.renderCardsScreen = function() {
   document.getElementById('settings-name-novia').textContent=S.users.novia||'Novia';
   const catsLabel = document.getElementById('cats-account-label');
   if (catsLabel) catsLabel.textContent = S.account==='personal' ? 'Personal' : 'Barbería';
-  list.innerHTML=S.cards.length?S.cards.map(c=>`    <div class="card-item">
+
+  if (!S.cards.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrega tu primera.</div></div>';
+  } else {
+    const personalCards = S.cards.filter(c=>(c.account||'personal')==='personal');
+    const barberiaCards = S.cards.filter(c=>c.account==='barberia');
+    const cardHtml = c => `<div class="card-item">
       <div class="card-color-dot" style="background:${c.color||'#1e3a5f'}">${c.emoji||'💳'}</div>
-      <div class="card-info"><div class="card-name">${c.name}</div><div class="card-type">${c.type}${c.balance?' · $'+fmt(c.balance):''}</div></div>
+      <div class="card-info">
+        <div class="card-name">${c.name}</div>
+        <div class="card-type">${c.type}${c.balance?' · $'+fmt(c.balance):''}</div>
+      </div>
       <div class="card-actions">
         <button class="card-action-btn" onclick="openCardModal(${c.id})">✏️</button>
         <button class="card-action-btn delete" onclick="deleteCard(${c.id})">🗑️</button>
       </div>
-    </div>`).join('') : '<div class="empty-state" style="padding:20px 0"><div class="es-icon">💳</div><div class="es-text">Sin tarjetas. Agrega tu primera.</div></div>';
+    </div>`;
+    let html = '';
+    if (personalCards.length) html += '<div class="saldo-group-label">🏠 Personal</div>' + personalCards.map(cardHtml).join('');
+    if (barberiaCards.length) html += '<div class="saldo-group-label">✂️ Barbería</div>' + barberiaCards.map(cardHtml).join('');
+    list.innerHTML = html;
+  }
+
   renderCatsSettings();
   renderThemeGrid();
   renderCurrencySettings();
@@ -3120,7 +3171,9 @@ function getCreditCards() {
 
 // Get debit/cash cards for payment
 function getDebitCards() {
-  return getMethods().filter(c => ['débito','efectivo'].includes(c.type));
+  // For credit payments, show all debit/cash cards from all accounts
+  const allCards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
+  return allCards.filter(c => ['débito','efectivo'].includes(c.type));
 }
 
 // Calculate pending balance for a credit card
@@ -3135,7 +3188,8 @@ function getCreditBalance(cardId) {
 
 // Called when saving a tx — check if method is credit and flag it
 function isCreditCard(methodId) {
-  const card = (S.cards || []).find(c => String(c.id) === String(methodId));
+  const allCards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
+  const card = allCards.find(c => String(c.id) === String(methodId));
   return card && card.type === 'crédito';
 }
 
