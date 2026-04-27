@@ -3662,8 +3662,6 @@ let saldosExpanded = false;
 window.toggleSaldos = function() {
   saldosExpanded = !saldosExpanded;
   renderSaldos();
-  document.querySelector('#s-home .sec-link[onclick="toggleSaldos()"]').textContent =
-    saldosExpanded ? 'Ver menos' : 'Ver todo';
 };
 
 function getCardBalance(cardId, account) {
@@ -3703,76 +3701,62 @@ function renderSaldos() {
   const list = document.getElementById('home-saldos-list');
   if (!list) return;
 
-  // Get all debit + cash cards across both accounts
-  const allCards = (S.cards || []).filter(c => ['débito','efectivo','transferencia'].includes(c.type));
+  const acc = S.account;
+  // Only show cards of the active account
+  const accountCards = (S.cards || []).filter(c =>
+    ['débito','efectivo','transferencia'].includes(c.type) &&
+    (c.account || 'personal') === acc
+  );
 
-  if (allCards.length === 0) {
+  if (accountCards.length === 0) {
     list.innerHTML = '<div class="empty-state" style="padding:16px 0"><div class="es-icon">💳</div><div class="es-text">Agrega tarjetas en Ajustes</div></div>';
     return;
   }
 
-  // Group by account
-  const accounts = ['personal', 'barberia'];
-  const accountLabels = { personal: '🏠 Personal', barberia: '✂️ Barbería' };
+  // Collapsed: show first 3 cards; expanded: show all
+  const visibleCards = saldosExpanded ? accountCards : accountCards.slice(0, 3);
+  const hasMore = accountCards.length > 3;
+
   let html = '';
+  let totalMXN = 0;
 
-  // Calculate totals
-  let grandTotalMXN = 0;
+  for (const card of visibleCards) {
+    const bal = getCardBalance(card.id, acc);
+    totalMXN += bal;
+    const isPositive = bal >= 0;
+    const color = isPositive ? 'var(--accent)' : 'var(--red)';
 
-  for (const acc of accounts) {
-    const accCards = allCards.filter(c => {
-      // Cards without account belong to personal by default
-      const cardAcc = c.account || 'personal';
-      return cardAcc === acc;
-    });
-    if (accCards.length === 0) continue;
-
-    if (!saldosExpanded && acc !== S.account) continue; // collapsed: only show current account
-
-    html += `<div class="saldo-group-label">${accountLabels[acc]}</div>`;
-
-    let accTotal = 0;
-    for (const card of accCards) {
-      const bal = getCardBalance(card.id, acc);
-      accTotal += bal;
-      grandTotalMXN += bal;
-      const isPositive = bal >= 0;
-      const color = isPositive ? 'var(--accent)' : 'var(--red)';
-
-      html += `<div class="saldo-card" onclick="openCardDetail(${card.id})" style="cursor:pointer">
-        <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
-        <div class="sc-info">
-          <div class="sc-name">${card.name}</div>
-          <div class="sc-type">${card.type}</div>
-        </div>
-        <div class="sc-amount">
-          <div class="sc-amount-val" style="color:${color}">${isPositive?'':'-'}$${fmt(Math.abs(bal))}</div>
-          <div class="sc-amount-sub">MXN · ver detalle →</div>
-        </div>
-      </div>`;
-    }
-
-    if (saldosExpanded && accCards.length > 1) {
-      html += `<div style="display:flex;justify-content:space-between;padding:6px 14px 10px;font-size:12px">
-        <span style="color:var(--muted)">Subtotal ${accountLabels[acc]}</span>
-        <span style="font-weight:700;color:${accTotal>=0?'var(--accent)':'var(--red)'}">
-          ${accTotal>=0?'':'-'}$${fmt(Math.abs(accTotal))} MXN
-        </span>
-      </div>`;
-    }
+    html += `<div class="saldo-card" onclick="openCardDetail(${card.id})" style="cursor:pointer">
+      <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
+      <div class="sc-info">
+        <div class="sc-name">${card.name}</div>
+        <div class="sc-type">${card.type}</div>
+      </div>
+      <div class="sc-amount">
+        <div class="sc-amount-val" style="color:${color}">${isPositive?'':'-'}$${fmt(Math.abs(bal))}</div>
+        <div class="sc-amount-sub">MXN · ver detalle →</div>
+      </div>
+    </div>`;
   }
 
-  // Grand total when expanded
-  if (saldosExpanded && accounts.length > 1) {
-    html += `<div style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px;display:flex;justify-content:space-between;margin-top:4px">
-      <span style="font-size:13px;font-weight:600;color:var(--muted)">Total general</span>
-      <span style="font-size:15px;font-weight:700;color:${grandTotalMXN>=0?'var(--accent)':'var(--red)'}">
-        ${grandTotalMXN>=0?'':'-'}$${fmt(Math.abs(grandTotalMXN))} MXN
+  // Total row
+  if (accountCards.length > 1) {
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-top:2px">
+      <span style="font-size:12px;color:var(--muted);font-weight:500">Total disponible</span>
+      <span style="font-size:14px;font-weight:700;color:${totalMXN>=0?'var(--accent)':'var(--red)'}">
+        ${totalMXN>=0?'':'-'}$${fmt(Math.abs(totalMXN))} MXN
       </span>
     </div>`;
   }
 
   list.innerHTML = html;
+
+  // Update "Ver todo" link
+  const link = document.querySelector('#s-home .sec-link[onclick="toggleSaldos()"]');
+  if (link) {
+    if (!hasMore) link.style.display = 'none';
+    else { link.style.display = ''; link.textContent = saldosExpanded ? 'Ver menos' : 'Ver todo'; }
+  }
 }
 
 // ── FORCE SYNC ──
