@@ -1645,6 +1645,48 @@ select.form-input { cursor: pointer; }
   </div>
 </div>
 
+<!-- MODAL: Detalle de cuenta/tarjeta -->
+<div class="modal-overlay" id="modal-card-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-handle"></div>
+      <!-- Header de la tarjeta -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div id="cdm-icon" style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div id="cdm-name" style="font-size:17px;font-weight:700"></div>
+          <div id="cdm-type" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px"></div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div id="cdm-balance" style="font-size:22px;font-weight:700;font-family:var(--serif)"></div>
+          <div style="font-size:10px;color:var(--muted)">Saldo actual</div>
+        </div>
+      </div>
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:4px">
+        <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Entradas</div>
+          <div id="cdm-income" style="font-size:14px;font-weight:700;color:var(--accent)">$0</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Salidas</div>
+          <div id="cdm-expense" style="font-size:14px;font-weight:700;color:var(--red)">$0</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Movimientos</div>
+          <div id="cdm-count" style="font-size:14px;font-weight:700">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-scroll">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;margin:12px 0 8px">Historial</div>
+      <div id="cdm-tx-list">
+        <div class="empty-state"><div class="es-icon">📋</div><div class="es-text">Sin movimientos</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── FIREBASE (loaded async, non-blocking) ──
 const firebaseConfig = {
@@ -3514,6 +3556,106 @@ function renderCurrencySettings() {
   if (rateDisplay) rateDisplay.textContent = `Tipo de cambio actual: 1 USD = $${rate.toFixed(2)} MXN`;
 }
 
+// ── CARD DETAIL MODAL ──
+window.openCardDetail = function(cardId) {
+  const allCards = S.cards && S.cards.length > 0 ? S.cards : METHODS;
+  const card = allCards.find(c => c.id === cardId);
+  if (!card) return;
+
+  const acc = card.account || 'personal';
+  const balance = getCardBalance(cardId, acc);
+  const isPositive = balance >= 0;
+
+  // Header
+  document.getElementById('cdm-icon').textContent = card.emoji || '💳';
+  document.getElementById('cdm-icon').style.background = (card.color || '#1e3a5f') + '33';
+  document.getElementById('cdm-name').textContent = card.name;
+  document.getElementById('cdm-type').textContent = card.type + ' · ' + (acc === 'personal' ? '🏠 Personal' : '✂️ Barbería');
+  document.getElementById('cdm-balance').textContent = (isPositive ? '' : '-') + '$' + fmt(Math.abs(balance));
+  document.getElementById('cdm-balance').style.color = isPositive ? 'var(--accent)' : 'var(--red)';
+
+  // All transactions involving this card
+  const allTxs = S.transactions.filter(t => {
+    const str = String(cardId);
+    return (
+      String(t.method) === str ||           // gasto/ingreso con esta tarjeta
+      String(t.fromCard) === str ||          // transferencia saliente
+      String(t.toCard) === str ||            // transferencia entrante
+      String(t.creditCardId) === str         // pago de crédito a esta tarjeta
+    );
+  }).sort((a,b) => b.date.localeCompare(a.date));
+
+  // Stats
+  const totalIn = allTxs.filter(t => {
+    if (t.type === 'income' && String(t.method) === String(cardId)) return true;
+    if (t.type === 'transfer' && String(t.toCard) === String(cardId)) return true;
+    if (t.type === 'credit-payment' && String(t.creditCardId) === String(cardId)) return true;
+    return false;
+  }).reduce((s,t) => s + t.amount, 0);
+
+  const totalOut = allTxs.filter(t => {
+    if ((t.type === 'expense' || t.type === 'credit-payment') && String(t.method) === String(cardId)) return true;
+    if (t.type === 'transfer' && String(t.fromCard) === String(cardId)) return true;
+    return false;
+  }).reduce((s,t) => s + t.amount, 0);
+
+  document.getElementById('cdm-income').textContent  = '+$' + fmt(totalIn);
+  document.getElementById('cdm-expense').textContent = '-$' + fmt(totalOut);
+  document.getElementById('cdm-count').textContent   = allTxs.length;
+
+  // Transaction list
+  const list = document.getElementById('cdm-tx-list');
+  if (allTxs.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div><div class="es-text">Sin movimientos en esta cuenta</div></div>';
+  } else {
+    list.innerHTML = allTxs.map(t => {
+      let icon, label, sign, color, desc;
+      const str = String(cardId);
+
+      if (t.type === 'transfer') {
+        const isOut = String(t.fromCard) === str;
+        const otherCardId = isOut ? t.toCard : t.fromCard;
+        const otherCard = allCards.find(c => String(c.id) === String(otherCardId));
+        icon = '⇄';
+        desc = isOut
+          ? `→ ${otherCard ? otherCard.name : 'otra cuenta'}`
+          : `← ${otherCard ? otherCard.name : 'otra cuenta'}`;
+        sign = isOut ? '-' : '+';
+        color = isOut ? 'var(--muted)' : 'var(--teal)';
+        label = isOut ? 'Transferencia salida' : 'Transferencia entrada';
+      } else if (t.type === 'credit-payment' && String(t.creditCardId) === str) {
+        icon = '✓'; desc = t.desc; sign = '+'; color = 'var(--accent)';
+        label = 'Pago recibido';
+      } else if (t.type === 'credit-payment' && String(t.method) === str) {
+        icon = '💳'; desc = t.desc; sign = '-'; color = 'var(--red)';
+        label = 'Pago de crédito';
+      } else if (t.type === 'income') {
+        const cat = getCat(t.category);
+        icon = cat.emoji; desc = t.desc; sign = '+'; color = 'var(--accent)';
+        label = cat.label;
+      } else {
+        const cat = getCat(t.category);
+        icon = cat.emoji; desc = t.desc; sign = '-'; color = 'var(--red)';
+        label = cat.label;
+      }
+
+      return `<div class="tx-item" style="margin-bottom:6px">
+        <div class="tx-icon" style="background:var(--bg3);flex-shrink:0">${icon}</div>
+        <div class="tx-info">
+          <div class="tx-name">${desc}</div>
+          <div class="tx-meta">${t.date} · ${label}</div>
+        </div>
+        <div style="flex-shrink:0;text-align:right">
+          <div style="font-size:14px;font-weight:700;color:${color}">${sign}$${fmt(t.amount)}</div>
+          ${t.currency === 'USD' ? `<div style="font-size:10px;color:var(--muted)">${sign}US$${fmt(t.amountOrig||t.amount)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  openModal('modal-card-detail');
+};
+
 // ── SALDOS POR TARJETA ──
 let saldosExpanded = false;
 
@@ -3597,7 +3739,7 @@ function renderSaldos() {
       const isPositive = bal >= 0;
       const color = isPositive ? 'var(--accent)' : 'var(--red)';
 
-      html += `<div class="saldo-card">
+      html += `<div class="saldo-card" onclick="openCardDetail(${card.id})" style="cursor:pointer">
         <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
         <div class="sc-info">
           <div class="sc-name">${card.name}</div>
@@ -3605,7 +3747,7 @@ function renderSaldos() {
         </div>
         <div class="sc-amount">
           <div class="sc-amount-val" style="color:${color}">${isPositive?'':'-'}$${fmt(Math.abs(bal))}</div>
-          <div class="sc-amount-sub">MXN</div>
+          <div class="sc-amount-sub">MXN · ver detalle →</div>
         </div>
       </div>`;
     }
