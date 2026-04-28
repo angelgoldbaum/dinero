@@ -122,8 +122,146 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
 }
-/* ── SALDOS ── */
-.saldo-card {
+/* ── HOME REDESIGN ── */
+
+/* Account selector */
+.account-selector {
+  display: flex; gap: 10px;
+  margin: 14px 0 16px;
+}
+.acc-btn {
+  flex: 1; padding: 13px;
+  border-radius: 14px;
+  border: 2px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans); font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.acc-btn.active {
+  background: var(--accent); color: #0e0f11;
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(200,242,97,0.25);
+}
+
+/* Home cards */
+.home-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 12px;
+  width: 100%; box-sizing: border-box; overflow: hidden;
+}
+.home-card-title {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.home-card-link {
+  font-size: 12px; color: var(--accent); font-weight: 600;
+  cursor: pointer; text-align: center;
+  display: block; margin-top: 10px;
+  padding: 6px 0;
+}
+
+/* Saldo row inside card */
+.saldo-row {
+  display: flex; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.saldo-row:last-of-type { border-bottom: none; }
+.saldo-row-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.saldo-row-name {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.saldo-row-amount {
+  font-size: 22px; font-weight: 700;
+  font-family: var(--serif); letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+.saldo-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.saldo-total-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.saldo-total-val { font-size: 16px; font-weight: 700; }
+
+/* Upcoming payment row */
+.upcoming-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.upcoming-row:last-of-type { border-bottom: none; }
+.upcoming-info { flex: 1; min-width: 0; }
+.upcoming-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upcoming-amount { font-size: 20px; font-weight: 700; color: var(--red); font-family: var(--serif); }
+.upcoming-right { text-align: right; flex-shrink: 0; }
+.upcoming-when { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 2px; }
+
+/* Home section header */
+.home-section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 16px 0 10px;
+}
+.home-section-title {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.home-section-link {
+  font-size: 12px; color: var(--accent); font-weight: 600; cursor: pointer;
+}
+
+/* Recent tx item - new layout */
+.home-tx-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 6px;
+  width: 100%; box-sizing: border-box; overflow: hidden;
+}
+.home-tx-emoji {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.home-tx-body { flex: 1; min-width: 0; }
+.home-tx-row1 {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 3px;
+}
+.home-tx-desc {
+  font-size: 14px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 60%;
+}
+.home-tx-date { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.home-tx-row2 { display: flex; justify-content: space-between; align-items: baseline; }
+.home-tx-amount { font-size: 14px; font-weight: 700; }
+.home-tx-method { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.home-tx-actions {
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0; margin-left: 4px;
+}
+.home-tx-btn {
+  background: transparent; border: 1px solid var(--border2);
+  border-radius: 6px; padding: 4px 7px;
+  cursor: pointer; font-size: 12px; line-height: 1;
+  color: var(--muted);
+}
+
+
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -216,7 +354,7 @@ html, body { overflow-x: hidden !important; }
   box-sizing: border-box;
 }
 .topbar-row { display: flex; align-items: center; justify-content: space-between; }
-.app-name { font-family: var(--serif); font-size: 24px; color: var(--accent); }
+.app-name { font-family: var(--serif); font-size: 22px; color: var(--accent); }
 .account-pills { display: flex; gap: 6px; }
 .apill {
   font-size: 11px; font-weight: 600; padding: 4px 12px;
@@ -826,18 +964,13 @@ select.form-input { cursor: pointer; }
 <!-- TOPBAR -->
 <div id="topbar">
   <div class="topbar-row">
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="showScreen('s-ajustes')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:color 0.2s" id="settings-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      </button>
-      <span class="app-name">dinero</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <button onclick="showScreen('s-ajustes')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;align-items:center;border-radius:8px" id="settings-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+    <span class="app-name">dinero</span>
+    <div style="display:flex;align-items:center;gap:8px">
       <div class="sync-dot" title="Sincronizado"></div>
-      <div class="account-pills">
-        <button class="apill active" onclick="setAccount('personal', this)">Personal</button>
-        <button class="apill" onclick="setAccount('barberia', this)">Barbería</button>
-      </div>
+      <span id="topbar-date" style="font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0.2px"></span>
     </div>
   </div>
 </div>
@@ -846,79 +979,37 @@ select.form-input { cursor: pointer; }
 
 <!-- HOME -->
 <div class="screen active" id="s-home">
-  <div style="margin-top:14px"></div>
 
-  <!-- Balance card -->
-  <div class="balance-card">
-    <div class="balance-label">Balance actual · <span id="bal-account">Personal</span></div>
-
-    <!-- MXN balance -->
-    <div id="bal-mxn-row">
-      <div class="balance-amount">$<span id="bal-amount-mxn">0</span> <span style="font-size:18px;color:var(--muted);font-family:var(--sans);font-weight:400">MXN</span></div>
-    </div>
-    <!-- USD balance (shown only when there are USD transactions) -->
-    <div id="bal-usd-row" style="display:none">
-      <div style="font-family:var(--serif);font-size:26px;color:var(--blue);letter-spacing:-0.5px;margin-top:4px">US$<span id="bal-amount-usd">0</span></div>
-    </div>
-    <!-- Equivalente total -->
-    <div id="bal-equiv-row" style="display:none;font-size:11px;color:var(--muted);margin-top:3px" >≈ <span id="bal-equiv"></span> MXN total</div>
-
-    <div class="balance-sub" style="margin-top:14px">
-      <div class="bsub">
-        <div class="bsub-label">Ingresos</div>
-        <div class="bsub-val income" id="bal-income">$0</div>
-      </div>
-      <div class="bsub">
-        <div class="bsub-label">Gastos</div>
-        <div class="bsub-val expense" id="bal-expense">$0</div>
-      </div>
-      <div class="bsub">
-        <div class="bsub-label">Este mes</div>
-        <div class="bsub-val" id="bal-month" style="color:var(--muted)">Abr 2025</div>
-      </div>
-    </div>
-    <!-- Mini bar chart -->
-    <div class="mini-chart" id="mini-chart"></div>
+  <!-- Account selector - prominent in body -->
+  <div class="account-selector">
+    <button class="acc-btn active" id="acc-btn-personal" onclick="setAccount('personal', this)">Personal</button>
+    <button class="acc-btn" id="acc-btn-barberia" onclick="setAccount('barberia', this)">Barbería</button>
   </div>
 
-  <!-- Stat cards -->
-  <div class="stat-row">
-    <div class="stat-card">
-      <div class="sc-label">Suscripciones</div>
-      <div class="sc-val" id="stat-subs">$0</div>
-      <div class="sc-sub" id="stat-subs-n">0 activas</div>
-    </div>
-    <div class="stat-card">
-      <div class="sc-label">Próximo pago</div>
-      <div class="sc-val" id="stat-next-amt">—</div>
-      <div class="sc-sub" id="stat-next-name">Sin pagos</div>
+  <!-- Card 1: Saldos por cuenta -->
+  <div class="home-card" id="home-saldos-card">
+    <div class="home-card-title">Saldo por cuentas</div>
+    <div id="home-saldos-list"></div>
+    <div id="saldos-toggle-link" class="home-card-link" onclick="toggleSaldos()" style="display:none">Ver todo</div>
+  </div>
+
+  <!-- Card 2: Próximos pagos (7 días) -->
+  <div class="home-card" id="home-upcoming-card">
+    <div class="home-card-title">Próximos pagos</div>
+    <div id="home-upcoming-list">
+      <div class="empty-state"><div class="es-icon">📅</div><div class="es-text">Sin pagos próximos</div></div>
     </div>
   </div>
 
-  <!-- Saldos por tarjeta -->
-  <div class="sec-header">
-    <div class="sec-title">Saldos por cuenta</div>
-    <div id="saldos-toggle-link" class="sec-link" onclick="toggleSaldos()" style="display:none">Ver todo</div>
+  <!-- Recientes -->
+  <div class="home-section-header">
+    <div class="home-section-title">Recientes</div>
+    <div class="home-section-link" onclick="showScreen('s-gastos')">Ver todo</div>
   </div>
-  <div id="home-saldos-list"></div>
-
-  <!-- Recent transactions -->
-  <div class="sec-header">
-    <div class="sec-title">Recientes</div>
-    <div class="sec-link" onclick="showScreen('s-gastos')">Ver todo</div>
-  </div>
-  <div class="tx-list" id="home-tx-list">
+  <div id="home-tx-list">
     <div class="empty-state"><div class="es-icon">💸</div><div class="es-text">Sin transacciones. ¡Empieza registrando!</div></div>
   </div>
 
-  <!-- Upcoming bills -->
-  <div class="sec-header" style="margin-top:20px">
-    <div class="sec-title">Próximos pagos</div>
-    <div class="sec-link" onclick="showScreen('s-recurrentes')">Ver todo</div>
-  </div>
-  <div id="home-bills-list">
-    <div class="empty-state"><div class="es-icon">📅</div><div class="es-text">Sin pagos próximos</div></div>
-  </div>
 </div>
 
 <!-- GASTOS & INGRESOS -->
@@ -2474,107 +2565,135 @@ function txItemHtml(t) {
 // ── RENDER HOME ──
 function renderHome() {
   const acc = S.account;
-  const now = new Date(), month = now.getMonth(), year = now.getFullYear();
-  const txs = S.transactions.filter(t=>t.account===acc);
-  const mTxs = txs.filter(t=>{ const d=new Date(t.date+'T00:00:00'); return d.getMonth()===month&&d.getFullYear()===year; });
-  const income      = mTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const expense     = mTxs.filter(t=>t.type==='expense' && !isCreditCard(t.method)).reduce((s,t)=>s+t.amount,0);
-  const creditPaid  = mTxs.filter(t=>t.type==='credit-payment').reduce((s,t)=>s+t.amount,0);
-  const balance     = income - expense - creditPaid;
+  const now = new Date();
 
-  // Separate USD vs MXN transactions for display
-  const rate = S.exchangeRate || 17.5;
-  const usdTxs   = mTxs.filter(t => t.currency === 'USD' && t.type !== 'transfer' && t.type !== 'credit-payment');
-  const hasUSD   = usdTxs.length > 0;
+  // ── Topbar date ──
+  const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const dayName = dayNames[now.getDay()];
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yy = String(now.getFullYear()).slice(2);
+  const dateEl = document.getElementById('topbar-date');
+  if (dateEl) dateEl.textContent = `${dayName} ${dd}/${mm}/${yy}`;
 
-  const usdIncome  = usdTxs.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amountOrig||t.amount/rate),0);
-  const usdExpense = usdTxs.filter(t=>t.type==='expense' && !isCreditCard(t.method)).reduce((s,t)=>s+(t.amountOrig||t.amount/rate),0);
-  const usdBalance = usdIncome - usdExpense;
+  // ── Account selector state ──
+  ['personal','barberia'].forEach(a => {
+    const btn = document.getElementById('acc-btn-'+a);
+    if (btn) {
+      btn.classList.toggle('active', a === acc);
+    }
+  });
 
-  const mxnBalance = balance - (usdBalance * rate); // balance from MXN-only transactions
+  // ── Card 1: Saldos por cuenta ──
+  renderSaldos();
 
-  // Update MXN balance
-  document.getElementById('bal-amount-mxn').textContent = fmt(Math.abs(mxnBalance));
-  document.getElementById('bal-mxn-row').style.color = mxnBalance < 0 ? 'var(--red)' : 'var(--text)';
+  // ── Card 2: Próximos pagos (7 días, bills + credit cards) ──
+  const today = new Date(); today.setHours(0,0,0,0);
+  const in7   = new Date(today); in7.setDate(today.getDate() + 7);
 
-  // Update USD balance
-  const usdRow   = document.getElementById('bal-usd-row');
-  const equivRow = document.getElementById('bal-equiv-row');
-  if (hasUSD) {
-    document.getElementById('bal-amount-usd').textContent = fmt(Math.abs(usdBalance));
-    usdRow.style.display   = 'block';
-    usdRow.style.color     = usdBalance < 0 ? 'var(--red)' : 'var(--blue)';
-    equivRow.style.display = 'block';
-    document.getElementById('bal-equiv').textContent = fmt(Math.abs(balance));
+  const upcomingItems = [];
+
+  // Bills due within 7 days
+  S.bills
+    .filter(b => b.account === acc && !b.paid && b.due)
+    .forEach(b => {
+      const d = new Date(b.due + 'T00:00:00');
+      if (d <= in7) {
+        const days = Math.round((d - today) / 86400000);
+        upcomingItems.push({
+          name:   b.name,
+          amount: b.amount || 0,
+          days,
+          type:   'bill',
+          id:     b.id,
+        });
+      }
+    });
+
+  // Credit cards with balance due within 7 days (if card has a due day set)
+  (S.cards || [])
+    .filter(c => c.type === 'crédito' && (c.account || 'personal') === acc)
+    .forEach(c => {
+      const bal = getCreditBalance(c.id);
+      if (bal <= 0) return;
+      if (c.dueDay) {
+        const dueDate = new Date(now.getFullYear(), now.getMonth(), c.dueDay);
+        if (dueDate < today) dueDate.setMonth(dueDate.getMonth() + 1);
+        const days = Math.round((dueDate - today) / 86400000);
+        if (days <= 7) {
+          upcomingItems.push({ name: c.name, amount: bal, days, type: 'credit', id: c.id });
+        }
+      }
+    });
+
+  upcomingItems.sort((a,b) => a.days - b.days);
+
+  const upList = document.getElementById('home-upcoming-list');
+  if (upcomingItems.length === 0) {
+    upList.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0">Sin pagos en los próximos 7 días 🎉</div>';
   } else {
-    usdRow.style.display   = 'none';
-    equivRow.style.display = 'none';
+    upList.innerHTML = upcomingItems.map(item => {
+      const whenText = item.days < 0   ? 'Vencido'
+                     : item.days === 0 ? 'Hoy'
+                     : item.days === 1 ? 'Mañana'
+                     : `En ${item.days} días`;
+      const whenColor = item.days <= 0 ? 'var(--red)' : item.days <= 2 ? 'var(--orange)' : 'var(--muted)';
+      const icon = item.type === 'credit' ? '💳' : '📄';
+      return `<div class="upcoming-row">
+        <div class="upcoming-info">
+          <div class="upcoming-name">${icon} ${item.name}</div>
+          <div class="upcoming-amount">$${fmt(item.amount)}</div>
+        </div>
+        <div class="upcoming-right">
+          <div class="upcoming-when" style="color:${whenColor}">${whenText}</div>
+        </div>
+      </div>`;
+    }).join('');
   }
 
-  document.getElementById('bal-income').textContent  = '$'+fmt(income);
-  document.getElementById('bal-expense').textContent = '$'+fmt(expense + creditPaid);
-  document.getElementById('bal-month').textContent   = monthName(month).slice(0,3)+' '+year;
-  document.getElementById('bal-account').textContent = acc==='personal' ? 'Personal' : 'Barbería';
-
-  // Mini bar chart
-  const chart = document.getElementById('mini-chart');
-  chart.innerHTML = '';
-  const maxVal = Math.max(1, ...Array.from({length:6},(_,i)=>{
-    let m=month-i, y=year; if(m<0){m+=12;y--;}
-    return txs.filter(t=>{ const d=new Date(t.date+'T00:00:00'); return d.getMonth()===m&&d.getFullYear()===y&&t.type==='expense'; }).reduce((s,t)=>s+t.amount,0);
-  }));
-  for (let i=5; i>=0; i--) {
-    let m=month-i, y=year; if(m<0){m+=12;y--;}
-    const val = txs.filter(t=>{ const d=new Date(t.date+'T00:00:00'); return d.getMonth()===m&&d.getFullYear()===y&&t.type==='expense'; }).reduce((s,t)=>s+t.amount,0);
-    const bar = document.createElement('div');
-    bar.className = 'mc-bar'+(i===0?' active-month':'');
-    bar.style.height = Math.max(4,Math.round((val/maxVal)*40))+'px';
-    chart.appendChild(bar);
-  }
-
-  // Stats
-  const subs = S.subscriptions.filter(s=>s.account===acc&&s.active);
-  document.getElementById('stat-subs').textContent   = '$'+fmt(subs.filter(s=>s.freq==='mensual').reduce((t,s)=>t+s.amount,0));
-  document.getElementById('stat-subs-n').textContent = subs.length+' activas';
-
-  // Credit debt stat
-  const creditCards = (S.cards||[]).filter(c=>c.type==='crédito');
-  const totalCreditDebt = creditCards.reduce((s,c)=>s+getCreditBalance(c.id),0);
-  const statNextAmt  = document.getElementById('stat-next-amt');
-  const statNextName = document.getElementById('stat-next-name');
-  if (totalCreditDebt > 0) {
-    statNextAmt.textContent  = '$'+fmt(totalCreditDebt);
-    statNextAmt.style.color  = 'var(--red)';
-    statNextName.textContent = 'En créditos';
-  } else {
-    const upcoming = S.bills.filter(b=>b.account===acc&&!b.paid&&b.due).sort((a,b)=>a.due.localeCompare(b.due));
-    statNextAmt.textContent  = upcoming.length ? '$'+fmt(upcoming[0].amount||0) : '—';
-    statNextAmt.style.color  = '';
-    statNextName.textContent = upcoming.length ? upcoming[0].name : 'Sin pagos';
-  }
-
-  // Recent txs (exclude transfers from home list unless they're the only thing)
+  // ── Recientes ──
+  const txs = S.transactions.filter(t => t.account === acc);
   const recent = txs
     .filter(t => t.type !== 'transfer')
     .sort((a,b) => b.date.localeCompare(a.date))
     .slice(0, 5);
+
   const list = document.getElementById('home-tx-list');
-  list.innerHTML = recent.length ? recent.map(txItemHtml).join('') :
-    '<div class="empty-state"><div class="es-icon">💸</div><div class="es-text">Sin transacciones. ¡Empieza registrando!</div></div>';
+  if (recent.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">💸</div><div class="es-text">Sin transacciones. ¡Empieza registrando!</div></div>';
+  } else {
+    list.innerHTML = recent.map(t => homeTxItemHtml(t)).join('');
+  }
+}
 
-  // Upcoming bills
-  const bList = document.getElementById('home-bills-list');
-  bList.innerHTML = upcoming.slice(0,3).length ? upcoming.slice(0,3).map(b=>{
-    const days=daysUntil(b.due);
-    return `<div class="bill-item${days<0?' bill-overdue':''}">
-      <div class="bill-days"><div class="bd-num">${Math.abs(days)}</div><div class="bd-lbl">${days<0?'venc.':days===0?'hoy':'días'}</div></div>
-      <div class="tx-info"><div class="tx-name">${b.name}</div><div class="tx-meta">${b.cat||''}</div></div>
-      <div class="tx-amount neg">$${fmt(b.amount)}</div>
-    </div>`;
-  }).join('') : '<div class="empty-state"><div class="es-icon">📅</div><div class="es-text">Sin pagos próximos</div></div>';
+function homeTxItemHtml(t) {
+  const isExpenseLike = t.type === 'expense' || t.type === 'credit-payment';
+  const cat    = getCat(t.category);
+  const sign   = isExpenseLike ? '-' : '+';
+  const color  = isExpenseLike ? 'var(--red)' : 'var(--accent)';
+  const method = getMethodDisplay(t.method);
 
-  // Saldos por tarjeta
-  renderSaldos();
+  // Format date as dd/mm/yy
+  const parts = t.date ? t.date.split('-') : [];
+  const dateStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0].slice(2)}` : t.date;
+
+  return `<div class="home-tx-item">
+    <div class="home-tx-emoji" style="background:${cat.color}22">${cat.emoji}</div>
+    <div class="home-tx-body">
+      <div class="home-tx-row1">
+        <div class="home-tx-desc">${t.desc}</div>
+        <div class="home-tx-date">${dateStr}</div>
+      </div>
+      <div class="home-tx-row2">
+        <div class="home-tx-amount" style="color:${color}">${sign}$${fmt(t.amount)}</div>
+        <div class="home-tx-method">${method.emoji} ${method.name}</div>
+      </div>
+    </div>
+    <div class="home-tx-actions">
+      <button class="home-tx-btn" onclick="openTxModal(${t.id})">✏️</button>
+      <button class="home-tx-btn" onclick="deleteTx(${t.id})">🗑️</button>
+    </div>
+  </div>`;
 }
 
 // ── RENDER GASTOS SCREEN ──
@@ -3709,8 +3828,8 @@ function renderSaldos() {
   let html = '';
 
   if (isFallback) {
-    html += `<div style="background:rgba(255,152,64,0.08);border:1px solid rgba(255,152,64,0.2);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:8px;font-size:11px;color:var(--orange)">
-      ⚠️ Asigna el centro de costos a tus tarjetas en <span onclick="showScreen('s-ajustes')" style="text-decoration:underline;cursor:pointer;font-weight:600">Ajustes</span>
+    html += `<div style="background:rgba(255,152,64,0.08);border:1px solid rgba(255,152,64,0.2);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:var(--orange)">
+      ⚠️ Asigna el centro de costos en <span onclick="showScreen('s-ajustes')" style="text-decoration:underline;cursor:pointer;font-weight:600">Ajustes</span>
     </div>`;
   }
 
@@ -3719,24 +3838,19 @@ function renderSaldos() {
     totalMXN += bal;
     const pos   = bal >= 0;
     const color = pos ? 'var(--accent)' : 'var(--red)';
-    html += `<div class="saldo-card" onclick="openCardDetail(${card.id})" style="cursor:pointer">
-      <div class="sc-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
-      <div class="sc-info">
-        <div class="sc-name">${card.name}</div>
-        <div class="sc-type">${card.type}${card.account ? ' · '+(card.account==='personal'?'🏠':'✂️') : ''}</div>
-      </div>
-      <div class="sc-amount">
-        <div class="sc-amount-val" style="color:${color}">${pos?'':'-'}$${fmt(Math.abs(bal))}</div>
-        <div class="sc-amount-sub">MXN · detalle →</div>
-      </div>
+    html += `<div class="saldo-row" onclick="openCardDetail(${card.id})" style="cursor:pointer">
+      <div class="saldo-row-icon" style="background:${card.color||'#1e3a5f'}22">${card.emoji||'💳'}</div>
+      <div class="saldo-row-name">${card.name}</div>
+      <div class="saldo-row-amount" style="color:${color}">${pos?'':'-'}$${fmt(Math.abs(bal))}</div>
     </div>`;
   }
 
-  if (visiblePool.length > 1) {
+  // Total
+  if (visiblePool.length > 0) {
     const pos = totalMXN >= 0;
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-top:2px;box-sizing:border-box">
-      <span style="font-size:12px;color:var(--muted);font-weight:500">Total disponible</span>
-      <span style="font-size:14px;font-weight:700;color:${pos?'var(--accent)':'var(--red)'}">
+    html += `<div class="saldo-total-row">
+      <span class="saldo-total-label">Total disponible</span>
+      <span class="saldo-total-val" style="color:${pos?'var(--accent)':'var(--red)'}">
         ${pos?'':'-'}$${fmt(Math.abs(totalMXN))} MXN
       </span>
     </div>`;
