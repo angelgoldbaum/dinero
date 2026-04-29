@@ -2335,9 +2335,10 @@ window.saveTx = function() {
     const toId   = document.getElementById('tx-to-card').value;
     if (!fromId || !toId)   { showToast('⚠️ Selecciona origen y destino'); return; }
     if (fromId === toId)    { showToast('⚠️ Origen y destino deben ser distintos'); return; }
-    const cards = getMethods();
-    const fromCard = cards.find(c=>String(c.id)===String(fromId));
-    const toCard   = cards.find(c=>String(c.id)===String(toId));
+    // Use getAllMethods — transfers can be between cards of ANY account
+    const allCards = getAllMethods();
+    const fromCard = allCards.find(c=>String(c.id)===String(fromId));
+    const toCard   = allCards.find(c=>String(c.id)===String(toId));
     if (!fromCard || !['débito','efectivo'].includes(fromCard.type)) { showToast('⚠️ Origen debe ser débito o efectivo'); return; }
     if (!toCard   || !['débito','efectivo'].includes(toCard.type))   { showToast('⚠️ Destino debe ser débito o efectivo'); return; }
     if (fromCard.type==='efectivo' && toCard.type==='débito')        { showToast('⚠️ No puedes transferir de efectivo a débito'); return; }
