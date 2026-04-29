@@ -9,7 +9,7 @@
 <style>
 /* ── THEME: Oscuro (default) ── */
 :root {
-  --bg: #0e0f11; 
+  --bg: #0e0f11;
   --bg2: #161820;
   --bg3: #1e2028;
   --card: #1a1c24;
@@ -2007,12 +2007,12 @@ window.showScreen = function(id) {
 
 window.setAccount = function(acc, btn) {
   S.account = acc;
-  document.querySelectorAll('.apill').forEach(b => b.classList.remove('active'));
+  // Update acc-btn buttons (new home design)
+  document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  document.getElementById('bal-account').textContent = acc === 'personal' ? 'Personal' : 'Barbería';
   // Reset account-dependent state
   saldosExpanded = false;
-  selectedMethod = ''; // will be re-resolved on next modal open
+  selectedMethod = '';
   selectedIncomeCat = 'sueldo';
   selectedCat = 'otro';
   loadCategoriesForAccount(acc);
@@ -3809,11 +3809,9 @@ function renderSaldos() {
   }
 
   // Prefer cards assigned to current account; fall back to all
-  const accountCards = allCards.filter(c => c.account === acc);
+  const accountCards = allCards.filter(c => (c.account || 'personal') === acc);
   const visiblePool  = accountCards.length > 0 ? accountCards : allCards;
-
-  // Show notice if falling back
-  const isFallback = accountCards.length === 0 && allCards.length > 0;
+  const isFallback   = accountCards.length === 0 && allCards.length > 0;
 
   const MAX          = 3;
   const hasMore      = visiblePool.length > MAX;
