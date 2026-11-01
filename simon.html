@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Neon Simon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Monoton&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07000f;
+  --bg2: #16002b;
+  --pink: #ff2bd6;
+  --cyan: #00f0ff;
+  --violet: #9d4dff;
+  --text: #f6e9ff;
+  --muted: #b89ad6;
+  --c0: #00ff9c; /* verde */
+  --c1: #ff2e63; /* rojo */
+  --c2: #ffe600; /* amarillo */
+  --c3: #00a8ff; /* azul */
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Orbitron', system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Fondo synthwave ── */
+.sky {
+  position: fixed; inset: 0; z-index: -3;
+  background: linear-gradient(180deg, #07000f 0%, #16002b 30%, #3a0057 52%, #6b0a6e 60%, #07000f 60%);
+}
+.stars {
+  position: fixed; inset: 0 0 40% 0; z-index: -3;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, #fff8, transparent),
+    radial-gradient(1px 1px at 28% 8%, #fff6, transparent),
+    radial-gradient(1.5px 1.5px at 44% 26%, #fff9, transparent),
+    radial-gradient(1px 1px at 63% 12%, #fff7, transparent),
+    radial-gradient(1.5px 1.5px at 78% 30%, #fff8, transparent),
+    radial-gradient(1px 1px at 90% 6%, #fff6, transparent),
+    radial-gradient(1px 1px at 6% 40%, #fff5, transparent),
+    radial-gradient(1px 1px at 55% 44%, #fff5, transparent);
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+@keyframes twinkle { from { opacity: .5 } to { opacity: 1 } }
+.sun {
+  position: fixed; left: 50%; top: 60%; z-index: -2;
+  width: min(62vmin, 460px); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff27a 0%, #ffb347 25%, #ff4fa3 55%, #9d2bff 80%);
+  -webkit-mask-image: linear-gradient(#000 0 28%, transparent 28%), repeating-linear-gradient(180deg, #000 0 14px, transparent 14px 20px);
+          mask-image: linear-gradient(#000 0 28%, transparent 28%), repeating-linear-gradient(180deg, #000 0 14px, transparent 14px 20px);
+  filter: drop-shadow(0 0 40px #ff4fa3aa);
+  opacity: .55;
+}
+.floor {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 40%; z-index: -1;
+  overflow: hidden; perspective: 260px;
+  background: linear-gradient(180deg, #2a0040 0%, #07000f 70%);
+}
+.floor::before {
+  content: ''; position: absolute; left: -150%; right: -150%; bottom: 0; height: 260%;
+  transform-origin: bottom center; transform: rotateX(66deg);
+  background-image:
+    linear-gradient(var(--pink) 2px, transparent 2px),
+    linear-gradient(90deg, var(--pink) 2px, transparent 2px);
+  background-size: 70px 70px;
+  animation: gridmove 1.1s linear infinite;
+  opacity: .75;
+}
+.floor::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #6b0a6e 0%, rgba(107,10,110,.6) 12%, transparent 40%);
+  pointer-events: none;
+}
+@keyframes gridmove { to { background-position: 0 70px; } }
+.scan {
+  position: fixed; inset: 0; z-index: 50; pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+/* ── Layout ── */
+.app {
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  gap: 14px;
+}
+.topbar {
+  width: 100%; max-width: 520px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 40px;
+}
+.logo {
+  font-family: 'Monoton', cursive; font-weight: 400;
+  font-size: clamp(44px, 13vw, 84px); line-height: 1; letter-spacing: 4px;
+  color: #ffd6fb;
+  text-shadow: 0 0 6px var(--pink), 0 0 18px var(--pink), 0 0 42px var(--pink), 0 0 80px var(--violet);
+  animation: flicker 6s infinite;
+  text-align: center;
+}
+.logo.small { font-size: clamp(26px, 8vw, 38px); letter-spacing: 2px; }
+.tagline {
+  font-size: 12px; letter-spacing: 6px; color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan); text-align: center; margin-top: 6px;
+}
+@keyframes flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: .55; }
+}
+
+.screen { display: none; width: 100%; max-width: 520px; flex: 1; flex-direction: column; align-items: center; gap: 18px; }
+.screen.active { display: flex; }
+#menu { justify-content: center; gap: 28px; }
+
+/* ── Botones neon ── */
+.btn {
+  font-family: 'Orbitron', sans-serif; font-weight: 700;
+  font-size: 15px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text); background: rgba(10,0,20,.6);
+  border: 2px solid var(--cyan); border-radius: 10px;
+  padding: 14px 22px; cursor: pointer;
+  box-shadow: 0 0 10px var(--cyan), inset 0 0 10px rgba(0,240,255,.35);
+  text-shadow: 0 0 8px var(--cyan);
+  transition: transform .12s, box-shadow .2s, background .2s;
+  touch-action: manipulation;
+}
+.btn:hover, .btn:focus-visible { background: rgba(0,240,255,.12); box-shadow: 0 0 18px var(--cyan), 0 0 40px rgba(0,240,255,.4), inset 0 0 14px rgba(0,240,255,.5); outline: none; }
+.btn:active { transform: scale(.97); }
+.btn.pink { border-color: var(--pink); box-shadow: 0 0 10px var(--pink), inset 0 0 10px rgba(255,43,214,.35); text-shadow: 0 0 8px var(--pink); }
+.btn.pink:hover, .btn.pink:focus-visible { background: rgba(255,43,214,.12); box-shadow: 0 0 18px var(--pink), 0 0 40px rgba(255,43,214,.4), inset 0 0 14px rgba(255,43,214,.5); }
+.btn.ghost { border-color: rgba(184,154,214,.6); box-shadow: none; text-shadow: none; color: var(--muted); padding: 8px 12px; font-size: 11px; letter-spacing: 2px; }
+.btn.ghost:hover, .btn.ghost:focus-visible { color: var(--text); border-color: var(--text); background: rgba(255,255,255,.06); box-shadow: none; }
+.btn.big { width: 100%; padding: 20px; font-size: 17px; }
+.btn small { display: block; font-size: 10px; letter-spacing: 2px; font-weight: 500; opacity: .8; margin-top: 6px; text-shadow: none; text-transform: none; }
+
+.menu-buttons { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 18px; }
+.best-line { font-size: 12px; letter-spacing: 3px; color: var(--muted); text-align: center; }
+.best-line b { color: var(--c2); text-shadow: 0 0 8px var(--c2); }
+.keys-hint { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-align: center; opacity: .8; line-height: 1.8; }
+
+/* ── Setup multijugador ── */
+.panel {
+  width: 100%; max-width: 420px;
+  background: rgba(12,0,26,.75);
+  border: 2px solid var(--violet); border-radius: 16px;
+  box-shadow: 0 0 20px rgba(157,77,255,.5), inset 0 0 20px rgba(157,77,255,.2);
+  padding: 22px 18px; display: flex; flex-direction: column; gap: 14px;
+  backdrop-filter: blur(4px);
+}
+.panel h2 { font-size: 16px; letter-spacing: 4px; text-align: center; color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+.panel p.help { font-size: 11px; line-height: 1.7; letter-spacing: 1px; color: var(--muted); text-align: center; }
+.name-row { display: flex; gap: 8px; align-items: center; }
+.name-row .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.name-row input {
+  flex: 1; min-width: 0;
+  font-family: 'Orbitron', sans-serif; font-size: 15px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text); background: rgba(0,0,0,.4);
+  border: 1.5px solid rgba(0,240,255,.5); border-radius: 8px; padding: 10px 12px;
+  outline: none; user-select: text; -webkit-user-select: text;
+}
+.name-row input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(0,240,255,.6); }
+.name-row .rm {
+  flex: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+  background: transparent; color: var(--c1); border: 1.5px solid rgba(255,46,99,.6);
+  font-size: 18px; font-family: inherit;
+}
+.name-row .rm:disabled { opacity: .25; cursor: default; }
+.toggle { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-size: 11px; letter-spacing: 1px; line-height: 1.6; color: var(--text); }
+.toggle input { appearance: none; -webkit-appearance: none; flex: none; width: 44px; height: 24px; border-radius: 12px; border: 2px solid var(--pink); position: relative; cursor: pointer; margin-top: 2px; transition: background .2s; }
+.toggle input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 8px var(--pink); transition: transform .2s; }
+.toggle input:checked { background: rgba(255,43,214,.25); }
+.toggle input:checked::after { transform: translateX(20px); }
+.toggle span small { display: block; color: var(--muted); font-size: 10px; }
+.row-btns { display: flex; gap: 10px; }
+.row-btns .btn { flex: 1; }
+
+/* ── HUD ── */
+.hud { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tag { font-size: 11px; letter-spacing: 3px; color: var(--muted); }
+.tag b { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+.status {
+  min-height: 26px; font-size: clamp(14px, 4.4vw, 18px); font-weight: 900; letter-spacing: 4px; text-align: center;
+  color: var(--text); text-shadow: 0 0 10px var(--pink), 0 0 24px var(--pink);
+}
+.status.go { text-shadow: 0 0 10px var(--c0), 0 0 24px var(--c0); }
+.status.add { text-shadow: 0 0 10px var(--c2), 0 0 24px var(--c2); color: #fffbd0; }
+.status.bad { text-shadow: 0 0 10px var(--c1), 0 0 24px var(--c1); color: #ffd0da; }
+.status.watch { text-shadow: 0 0 10px var(--cyan), 0 0 24px var(--cyan); }
+
+.players { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 30px; }
+.chip {
+  font-size: 11px; letter-spacing: 2px; padding: 6px 10px; border-radius: 999px;
+  border: 1.5px solid rgba(184,154,214,.5); color: var(--muted);
+  transition: all .25s;
+}
+.chip.cur { color: var(--text); border-color: var(--c2); box-shadow: 0 0 12px var(--c2); text-shadow: 0 0 6px var(--c2); }
+.chip.out { text-decoration: line-through; opacity: .35; }
+
+/* ── Tablero ── */
+.board-wrap { width: min(88vw, 440px, 56dvh); aspect-ratio: 1; position: relative; margin: 6px 0; }
+.board {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 14px;
+  border-radius: 50%;
+  padding: 0;
+}
+.board::before {
+  content: ''; position: absolute; inset: -12px; border-radius: 50%;
+  border: 3px solid var(--violet);
+  box-shadow: 0 0 16px var(--violet), inset 0 0 16px var(--violet);
+  pointer-events: none;
+}
+.pad {
+  --c: var(--c0);
+  position: relative; cursor: pointer; border: 3px solid var(--c);
+  background: color-mix(in srgb, var(--c) 16%, #08000f);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 70%, transparent), inset 0 0 22px color-mix(in srgb, var(--c) 35%, transparent);
+  transition: background .09s, box-shadow .09s, filter .09s, transform .09s;
+  touch-action: manipulation; outline: none;
+}
+.pad:nth-child(1) { --c: var(--c0); border-top-left-radius: 100%; }
+.pad:nth-child(2) { --c: var(--c1); border-top-right-radius: 100%; }
+.pad:nth-child(3) { --c: var(--c2); border-bottom-left-radius: 100%; }
+.pad:nth-child(4) { --c: var(--c3); border-bottom-right-radius: 100%; }
+.pad:focus-visible { outline: 2px dashed #fff; outline-offset: 3px; }
+.pad.lit {
+  background: var(--c);
+  box-shadow: 0 0 24px var(--c), 0 0 60px var(--c), 0 0 110px color-mix(in srgb, var(--c) 60%, transparent), inset 0 0 40px rgba(255,255,255,.75);
+  filter: brightness(1.15) saturate(1.2);
+  transform: scale(.985);
+}
+.board.locked .pad { cursor: default; }
+.board.error { animation: shake .45s; }
+.board.error .pad { border-color: var(--c1); box-shadow: 0 0 30px var(--c1), inset 0 0 40px rgba(255,46,99,.6); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); } 40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); } 80% { transform: translateX(4px); }
+}
+.hub {
+  position: absolute; left: 50%; top: 50%; width: 40%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #2a0848, #07000f 70%);
+  border: 3px solid var(--pink);
+  box-shadow: 0 0 18px var(--pink), inset 0 0 18px rgba(255,43,214,.5), 0 0 0 10px #07000f;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 2;
+}
+.hub .num {
+  font-size: clamp(34px, 11vw, 58px); font-weight: 900; line-height: 1;
+  color: #fff; text-shadow: 0 0 8px var(--cyan), 0 0 22px var(--cyan);
+  font-variant-numeric: tabular-nums;
+}
+.hub .lbl { font-size: clamp(7px, 2vw, 10px); letter-spacing: 3px; color: var(--muted); margin-top: 6px; }
+.hub .prog { font-size: clamp(8px, 2.2vw, 11px); letter-spacing: 2px; color: var(--c2); margin-top: 4px; min-height: 1.2em; text-shadow: 0 0 6px var(--c2); }
+
+/* ── Overlay ── */
+.overlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: none; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(5,0,12,.82); backdrop-filter: blur(6px);
+}
+.overlay.show { display: flex; animation: fadein .25s; }
+@keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+.overlay .panel { text-align: center; gap: 16px; animation: pop .3s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop { from { transform: scale(.85); } to { transform: scale(1); } }
+.ov-kicker { font-size: 11px; letter-spacing: 5px; color: var(--muted); }
+.ov-title {
+  font-size: clamp(22px, 7vw, 32px); font-weight: 900; letter-spacing: 3px; line-height: 1.2;
+  color: #fff; text-shadow: 0 0 10px var(--pink), 0 0 26px var(--pink); word-break: break-word;
+}
+.ov-text { font-size: 12px; letter-spacing: 1px; line-height: 1.8; color: var(--text); }
+.ov-text b { color: var(--c2); text-shadow: 0 0 6px var(--c2); }
+.ov-btns { display: flex; flex-direction: column; gap: 10px; }
+.rank { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 12px; letter-spacing: 2px; }
+.rank li { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 6px; background: rgba(255,255,255,.04); }
+.rank li.win { color: var(--c2); text-shadow: 0 0 8px var(--c2); background: rgba(255,230,0,.08); }
+
+@media (max-height: 640px) {
+  .app { gap: 8px; }
+  .logo.small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floor::before, .stars, .logo { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<div class="stars"></div>
+<div class="sun"></div>
+<div class="floor"></div>
+<div class="scan"></div>
+
+<div class="app">
+  <div class="topbar">
+    <button class="btn ghost" id="backBtn" style="visibility:hidden">◄ MENÚ</button>
+    <button class="btn ghost" id="muteBtn" aria-pressed="false">♪ SONIDO: ON</button>
+  </div>
+
+  <!-- MENÚ -->
+  <section class="screen active" id="menu">
+    <div>
+      <h1 class="logo">SIMON</h1>
+      <div class="tagline">NEON · EDICIÓN 1984</div>
+    </div>
+    <div class="menu-buttons">
+      <button class="btn big" id="soloBtn">Clásico<small>Un jugador · la máquina alarga la secuencia</small></button>
+      <button class="btn big pink" id="multiBtn">Multijugador<small>Repite la secuencia, añade un color y pásalo</small></button>
+    </div>
+    <div class="best-line">RÉCORD CLÁSICO: <b id="bestMenu">0</b></div>
+    <div class="keys-hint">TECLADO: Q · W · A · S &nbsp;o&nbsp; 1 · 2 · 3 · 4</div>
+  </section>
+
+  <!-- SETUP MULTI -->
+  <section class="screen" id="setup">
+    <h1 class="logo small">SIMON</h1>
+    <div class="panel">
+      <h2>JUGADORES</h2>
+      <p class="help">Cada turno: repite la secuencia completa y luego <b style="color:var(--c2)">añade un color nuevo</b>. Después pasa el dispositivo. Si fallas, quedas eliminado. ¡El último en pie gana!</p>
+      <div id="nameList" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button class="btn ghost" id="addPlayer">+ AÑADIR JUGADOR</button>
+      <label class="toggle">
+        <input type="checkbox" id="replayToggle" checked>
+        <span>Reproducir la secuencia al empezar cada turno<small>Desactívalo para jugar de memoria: solo verás lo que añadió el jugador anterior.</small></span>
+      </label>
+      <div class="row-btns">
+        <button class="btn pink" id="startMulti">¡A JUGAR!</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- JUEGO -->
+  <section class="screen" id="game">
+    <h1 class="logo small">SIMON</h1>
+    <div class="hud">
+      <div class="tag" id="modeTag">MODO <b>CLÁSICO</b></div>
+      <div class="tag" id="bestTag">RÉCORD <b id="bestGame">0</b></div>
+    </div>
+    <div class="players" id="players"></div>
+    <div class="board-wrap">
+      <div class="board locked" id="board">
+        <button class="pad" data-i="0" aria-label="Verde"></button>
+        <button class="pad" data-i="1" aria-label="Rojo"></button>
+        <button class="pad" data-i="2" aria-label="Amarillo"></button>
+        <button class="pad" data-i="3" aria-label="Azul"></button>
+      </div>
+      <div class="hub">
+        <div class="num" id="hubNum">0</div>
+        <div class="lbl" id="hubLbl">NIVEL</div>
+        <div class="prog" id="hubProg"></div>
+      </div>
+    </div>
+    <div class="status" id="status">PREPÁRATE</div>
+  </section>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="panel">
+    <div class="ov-kicker" id="ovKicker"></div>
+    <div class="ov-title" id="ovTitle"></div>
+    <div class="ov-text" id="ovText"></div>
+    <div class="ov-btns" id="ovBtns"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ───────── Configuración ─────────
+  const PADS = [
+    { name: 'VERDE',    freq: 261.63, color: '#00ff9c' }, // Do4
+    { name: 'ROJO',     freq: 329.63, color: '#ff2e63' }, // Mi4
+    { name: 'AMARILLO', freq: 392.00, color: '#ffe600' }, // Sol4
+    { name: 'AZUL',     freq: 523.25, color: '#00a8ff' }, // Do5
+  ];
+  const KEYS = { q: 0, w: 1, a: 2, s: 3, '1': 0, '2': 1, '3': 2, '4': 3 };
+  const MAX_PLAYERS = 6;
+
+  const $ = id => document.getElementById(id);
+  const padEls = [...document.querySelectorAll('.pad')];
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ───────── Almacenamiento seguro ─────────
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  // ───────── Audio (Web Audio, sintetizador ochentero) ─────────
+  let actx = null;
+  let muted = store.get('neonSimonMuted', false);
+  function audio() {
+    if (!actx) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      actx = new C();
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function tone(freq, dur, { type = 'square', vol = 0.16, slideTo = null, delay = 0 } = {}) {
+    const a = audio();
+    if (!a || muted) return;
+    const t = a.currentTime + delay;
+    const out = a.createGain();
+    const filter = a.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2600, t);
+    filter.Q.value = 3;
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    out.gain.setValueAtTime(vol, t + Math.max(0.03, dur - 0.07));
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    filter.connect(out).connect(a.destination);
+
+    // Dos osciladores ligeramente desafinados = sonido "chorus" de sinte
+    [[type, 1, 1], ['sawtooth', 1.006, 0.45]].forEach(([tp, mult, g]) => {
+      const o = a.createOscillator();
+      const og = a.createGain();
+      o.type = tp;
+      o.frequency.setValueAtTime(freq * mult, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo * mult, t + dur);
+      og.gain.value = g;
+      o.connect(og).connect(filter);
+      o.start(t);
+      o.stop(t + dur + 0.02);
+    });
+  }
+  const sfx = {
+    error() { tone(140, 0.75, { type: 'sawtooth', vol: 0.22, slideTo: 45 }); },
+    add()   { tone(784, 0.08, { vol: 0.1 }); tone(1046.5, 0.12, { vol: 0.1, delay: 0.08 }); },
+    win()   { [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((f, k) => tone(f, 0.16, { vol: 0.13, delay: k * 0.12 })); },
+    levelUp() { tone(1046.5, 0.07, { vol: 0.07 }); tone(1318.5, 0.09, { vol: 0.07, delay: 0.07 }); },
+  };
+
+  // ───────── Estado ─────────
+  const S = {
+    mode: 'solo',      // 'solo' | 'multi'
+    seq: [],
+    idx: 0,
+    phase: 'idle',     // 'idle' | 'watch' | 'repeat' | 'add'
+    accepting: false,
+    players: [],
+    cur: 0,
+    replay: true,
+    best: store.get('neonSimonBest', 0),
+  };
+  let gen = 0; // invalida animaciones pendientes al salir/reiniciar
+
+  // ───────── UI helpers ─────────
+  function show(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === screen));
+    $('backBtn').style.visibility = screen === 'menu' ? 'hidden' : 'visible';
+  }
+  function setStatus(text, cls = '') {
+    const el = $('status');
+    el.textContent = text;
+    el.className = 'status ' + cls;
+  }
+  function setHub(num, lbl, prog = '') {
+    $('hubNum').textContent = num;
+    $('hubLbl').textContent = lbl;
+    $('hubProg').textContent = prog;
+  }
+  function lock(v) {
+    S.accepting = !v;
+    $('board').classList.toggle('locked', v);
+  }
+  function updateBest() {
+    $('bestMenu').textContent = S.best;
+    $('bestGame').textContent = S.best;
+  }
+  function renderMute() {
+    $('muteBtn').textContent = muted ? '♪ SONIDO: OFF' : '♪ SONIDO: ON';
+    $('muteBtn').setAttribute('aria-pressed', String(muted));
+  }
+  function flash(i, ms) {
+    const el = padEls[i];
+    clearTimeout(el._t);
+    el.classList.add('lit');
+    tone(PADS[i].freq, ms / 1000);
+    el._t = setTimeout(() => el.classList.remove('lit'), ms);
+  }
+
+  function overlay({ kicker = '', title = '', html = '', buttons = [] }) {
+    $('ovKicker').textContent = kicker;
+    $('ovTitle').textContent = title;
+    $('ovText').innerHTML = html;
+    const box = $('ovBtns');
+    box.innerHTML = '';
+    buttons.forEach(b => {
+      const el = document.createElement('button');
+      el.className = 'btn ' + (b.cls || '');
+      el.textContent = b.label;
+      el.addEventListener('click', () => { hideOverlay(); b.onClick && b.onClick(); });
+      box.appendChild(el);
+    });
+    $('overlay').classList.add('show');
+    const first = box.querySelector('button');
+    if (first) setTimeout(() => first.focus(), 50);
+  }
+  function hideOverlay() { $('overlay').classList.remove('show'); }
+  const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ───────── Reproducción de la secuencia ─────────
+  function timing() {
+    if (S.mode === 'multi') return { on: 420, gap: 160 };
+    const n = S.seq.length;
+    const on = Math.max(200, 520 - n * 18);
+    return { on, gap: Math.max(70, on * 0.35) };
+  }
+  async function playSequence() {
+    const my = ++gen;
+    lock(true);
+    S.phase = 'watch';
+    setStatus('OBSERVA…', 'watch');
+    await sleep(700);
+    const { on, gap } = timing();
+    for (let k = 0; k < S.seq.length; k++) {
+      if (my !== gen) return false;
+      setHub(S.seq.length, S.mode === 'solo' ? 'NIVEL' : 'SECUENCIA', `${k + 1}/${S.seq.length}`);
+      flash(S.seq[k], on);
+      await sleep(on + gap);
+    }
+    return my === gen;
+  }
+  function beginRepeat() {
+    S.phase = 'repeat';
+    S.idx = 0;
+    lock(false);
+    setHub(S.seq.length, S.mode === 'solo' ? 'NIVEL' : 'SECUENCIA', `0/${S.seq.length}`);
+    setStatus(S.mode === 'solo' ? '¡TU TURNO!' : 'REPITE LA SECUENCIA', 'go');
+  }
+  function beginAdd() {
+    S.phase = 'add';
+    lock(false);
+    setHub(S.seq.length, 'SECUENCIA', '+1');
+    setStatus(S.seq.length ? '¡AÑADE UN COLOR!' : 'ELIGE EL PRIMER COLOR', 'add');
+  }
+
+  // ───────── Entrada ─────────
+  function press(i) {
+    if (!S.accepting) return;
+    flash(i, 230);
+
+    if (S.phase === 'repeat') {
+      if (S.seq[S.idx] !== i) return fail();
+      S.idx++;
+      setHub(S.seq.length, S.mode === 'solo' ? 'NIVEL' : 'SECUENCIA', `${S.idx}/${S.seq.length}`);
+      if (S.idx < S.seq.length) return;
+      // Secuencia completada
+      if (S.mode === 'solo') {
+        lock(true);
+        const score = S.seq.length;
+        if (score > S.best) { S.best = score; store.set('neonSimonBest', S.best); updateBest(); }
+        setStatus('¡BIEN!', 'go');
+        setTimeout(() => sfx.levelUp(), 260);
+        const my = gen;
+        setTimeout(() => { if (my === gen) soloRound(); }, 900);
+      } else {
+        S.phase = 'between';
+        lock(true);
+        const my = gen;
+        setTimeout(() => { if (my === gen && S.phase === 'between') beginAdd(); }, 250);
+      }
+      return;
+    }
+
+    if (S.phase === 'add') {
+      S.seq.push(i);
+      lock(true);
+      S.phase = 'idle';
+      const p = S.players[S.cur];
+      p.score = Math.max(p.score, S.seq.length);
+      setHub(S.seq.length, 'SECUENCIA', '');
+      setStatus(`+${PADS[i].name}`, 'add');
+      setTimeout(() => sfx.add(), 240);
+      const my = gen;
+      setTimeout(() => { if (my === gen) nextPlayer(); }, 1000);
+    }
+  }
+
+  padEls.forEach((el, i) => {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); audio(); press(i); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); press(i); } });
+  });
+  window.addEventListener('keydown', e => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.tagName === 'INPUT') return;
+    if ($('overlay').classList.contains('show')) return;
+    const k = KEYS[e.key.toLowerCase()];
+    if (k !== undefined && $('game').classList.contains('active')) { audio(); press(k); }
+  });
+
+  // ───────── Modo clásico ─────────
+  function startSolo() {
+    gen++;
+    S.mode = 'solo';
+    S.seq = [];
+    S.players = [];
+    $('modeTag').innerHTML = 'MODO <b>CLÁSICO</b>';
+    $('bestTag').style.visibility = 'visible';
+    $('players').innerHTML = '';
+    updateBest();
+    show('game');
+    setHub(0, 'NIVEL');
+    setStatus('PREPÁRATE');
+    lock(true);
+    const my = gen;
+    setTimeout(() => { if (my === gen) soloRound(); }, 500);
+  }
+  async function soloRound() {
+    S.seq.push(Math.floor(Math.random() * 4));
+    if (await playSequence()) beginRepeat();
+  }
+
+  // ───────── Multijugador ─────────
+  function renderPlayers() {
+    const box = $('players');
+    box.innerHTML = '';
+    S.players.forEach((p, k) => {
+      const c = document.createElement('span');
+      c.className = 'chip' + (k === S.cur && p.alive ? ' cur' : '') + (p.alive ? '' : ' out');
+      c.textContent = p.name;
+      box.appendChild(c);
+    });
+  }
+  function startMulti(names) {
+    gen++;
+    S.mode = 'multi';
+    S.seq = [];
+    S.players = names.map(n => ({ name: n, alive: true, score: 0 }));
+    S.cur = 0;
+    $('modeTag').innerHTML = `MODO <b>MULTI</b> · ${S.players.length}J`;
+    $('bestTag').style.visibility = 'hidden';
+    show('game');
+    setHub(0, 'SECUENCIA');
+    setStatus('');
+    lock(true);
+    renderPlayers();
+    passTo(S.cur);
+  }
+  function passTo(k) {
+    renderPlayers();
+    const p = S.players[k];
+    const n = S.seq.length;
+    const detail = n === 0
+      ? 'Empiezas tú: elige el <b>primer color</b> de la secuencia.'
+      : `Repite los <b>${n}</b> color${n > 1 ? 'es' : ''} y luego añade uno nuevo.` +
+        (S.replay ? '' : '<br>Modo memoria: <b>sin repetición</b>.');
+    setStatus(`TURNO DE ${p.name}`, 'watch');
+    overlay({
+      kicker: 'PASA EL DISPOSITIVO A',
+      title: p.name,
+      html: detail,
+      buttons: [{ label: '¡ESTOY LISTO!', cls: 'pink', onClick: beginTurn }],
+    });
+  }
+  async function beginTurn() {
+    audio();
+    if (S.seq.length === 0) return beginAdd();
+    if (S.replay) {
+      if (await playSequence()) beginRepeat();
+    } else {
+      gen++;
+      beginRepeat();
+    }
+  }
+  function nextAlive(from) {
+    const n = S.players.length;
+    for (let s = 1; s <= n; s++) {
+      const k = (from + s) % n;
+      if (S.players[k].alive) return k;
+    }
+    return from;
+  }
+  function nextPlayer() {
+    S.cur = nextAlive(S.cur);
+    passTo(S.cur);
+  }
+
+  // ───────── Error / fin ─────────
+  function fail() {
+    lock(true);
+    S.phase = 'idle';
+    gen++;
+    const my = gen;
+    const expected = S.seq[S.idx];
+    sfx.error();
+    const board = $('board');
+    board.classList.remove('error');
+    void board.offsetWidth;
+    board.classList.add('error');
+    setStatus('¡ERROR!', 'bad');
+    // Mostrar cuál era el color correcto
+    setTimeout(() => { if (my === gen) { padEls[expected].classList.add('lit'); setTimeout(() => padEls[expected].classList.remove('lit'), 700); } }, 550);
+    setTimeout(() => {
+      if (my !== gen) return;
+      board.classList.remove('error');
+      S.mode === 'solo' ? soloOver(expected) : multiOut(expected);
+    }, 1400);
+  }
+  function soloOver(expected) {
+    const score = S.seq.length - 1;
+    const record = score > 0 && score >= S.best;
+    overlay({
+      kicker: 'GAME OVER',
+      title: record ? '¡NUEVO RÉCORD!' : `NIVEL ${score}`,
+      html: `Completaste <b>${score}</b> ronda${score === 1 ? '' : 's'}.<br>El color correcto era <b style="color:${PADS[expected].color};text-shadow:0 0 8px ${PADS[expected].color}">${PADS[expected].name}</b>.<br>Récord: <b>${S.best}</b>`,
+      buttons: [
+        { label: 'JUGAR OTRA VEZ', cls: 'pink', onClick: startSolo },
+        { label: 'MENÚ', onClick: toMenu },
+      ],
+    });
+  }
+  function multiOut(expected) {
+    const p = S.players[S.cur];
+    p.alive = false;
+    const alive = S.players.filter(x => x.alive);
+    renderPlayers();
+    if (alive.length <= 1) return multiWin(alive[0]);
+    overlay({
+      kicker: 'ELIMINADO',
+      title: p.name,
+      html: `Fallaste en el color <b>${S.idx + 1}</b> de ${S.seq.length}: tocaba <b style="color:${PADS[expected].color};text-shadow:0 0 8px ${PADS[expected].color}">${PADS[expected].name}</b>.<br>Quedan <b>${alive.length}</b> jugadores. La secuencia sigue igual.`,
+      buttons: [{ label: 'CONTINUAR', cls: 'pink', onClick: nextPlayer }],
+    });
+  }
+  function multiWin(winner) {
+    sfx.win();
+    setStatus(`¡GANA ${winner.name}!`, 'add');
+    const ranking = [...S.players].sort((a, b) => (b.alive - a.alive) || (b.score - a.score));
+    const list = ranking.map(p => `<li class="${p === winner ? 'win' : ''}"><span>${p === winner ? '★ ' : ''}${esc(p.name)}</span><span>${p.score}</span></li>`).join('');
+    const names = S.players.map(p => p.name);
+    overlay({
+      kicker: 'CAMPEÓN',
+      title: `¡GANA ${winner.name}!`,
+      html: `Secuencia final: <b>${S.seq.length}</b> colores.<br><br><ul class="rank">${list}</ul>`,
+      buttons: [
+        { label: 'REVANCHA', cls: 'pink', onClick: () => startMulti(names) },
+        { label: 'MENÚ', onClick: toMenu },
+      ],
+    });
+  }
+  function toMenu() {
+    gen++;
+    lock(true);
+    S.phase = 'idle';
+    padEls.forEach(el => el.classList.remove('lit'));
+    hideOverlay();
+    updateBest();
+    show('menu');
+  }
+
+  // ───────── Setup multijugador ─────────
+  let names = store.get('neonSimonNames', ['JUGADOR 1', 'JUGADOR 2']);
+  if (!Array.isArray(names) || names.length < 2) names = ['JUGADOR 1', 'JUGADOR 2'];
+  function renderNames() {
+    const box = $('nameList');
+    box.innerHTML = '';
+    names.forEach((n, k) => {
+      const row = document.createElement('div');
+      row.className = 'name-row';
+      const color = PADS[k % 4].color;
+      row.innerHTML = `<span class="dot" style="background:${color};box-shadow:0 0 8px ${color}"></span>`;
+      const inp = document.createElement('input');
+      inp.value = n;
+      inp.maxLength = 12;
+      inp.placeholder = `JUGADOR ${k + 1}`;
+      inp.setAttribute('aria-label', `Nombre del jugador ${k + 1}`);
+      inp.addEventListener('input', () => { names[k] = inp.value; });
+      const rm = document.createElement('button');
+      rm.className = 'rm';
+      rm.textContent = '✕';
+      rm.setAttribute('aria-label', `Quitar jugador ${k + 1}`);
+      rm.disabled = names.length <= 2;
+      rm.addEventListener('click', () => { names.splice(k, 1); renderNames(); });
+      row.append(inp, rm);
+      box.appendChild(row);
+    });
+    $('addPlayer').disabled = names.length >= MAX_PLAYERS;
+    $('addPlayer').style.opacity = names.length >= MAX_PLAYERS ? .35 : 1;
+  }
+  $('addPlayer').addEventListener('click', () => {
+    if (names.length >= MAX_PLAYERS) return;
+    names.push(`JUGADOR ${names.length + 1}`);
+    renderNames();
+    const inputs = $('nameList').querySelectorAll('input');
+    inputs[inputs.length - 1].select();
+  });
+  $('startMulti').addEventListener('click', () => {
+    const final = names.map((n, k) => (n.trim() || `JUGADOR ${k + 1}`).toUpperCase().slice(0, 12));
+    store.set('neonSimonNames', final);
+    S.replay = $('replayToggle').checked;
+    startMulti(final);
+  });
+
+  // ───────── Navegación ─────────
+  $('soloBtn').addEventListener('click', () => { audio(); startSolo(); });
+  $('multiBtn').addEventListener('click', () => { audio(); renderNames(); show('setup'); });
+  $('backBtn').addEventListener('click', toMenu);
+  $('muteBtn').addEventListener('click', () => {
+    muted = !muted;
+    store.set('neonSimonMuted', muted);
+    renderMute();
+    if (!muted) tone(523.25, 0.1, { vol: 0.08 });
+  });
+
+  renderMute();
+  updateBest();
+  window.__simon = { S, press }; // útil para pruebas
+})();
+</script>
+</body>
+</html>
